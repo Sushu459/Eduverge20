@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { signIn, signUp } from '../utils/auth';
 import '../index.css';
-import EduvergeLogo from '../../dist/assets/smartVerg.jpeg'; // <- your logo file
-import OnlyLogo from '../../dist/assets/onlylogo.jpeg'; // <- your logo file
+import EduvergeLogo from '../assets/smartVerg.jpeg'; // <- your logo file
+import OnlyLogo from '../assets/onlylogo.jpeg'
 interface LoginPageProps {
   onLogin: () => void;
 }
