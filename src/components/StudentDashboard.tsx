@@ -4,12 +4,14 @@ import { supabase } from '../utils/supabaseClient';
 import type { User, Assessment, Submission } from '../utils/supabaseClient';
 import NavigationSidebar from './NavigationSidebar';
 import TestInstructions from './TestInstructions';
-import { BookOpen, Clock, CheckCircle, PlayCircle, Sparkles } from 'lucide-react';
+import { BookOpen, Clock, CheckCircle, PlayCircle, Sparkles, Code2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
 
 interface StudentDashboardProps {
   user: User;
 }
+
 
 const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
   const navigate = useNavigate();
@@ -19,9 +21,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
   const [showInstructions, setShowInstructions] = useState(false);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
 
+
   useEffect(() => {
     fetchData();
   }, [user.id]);
+
 
   const fetchData = async () => {
     try {
@@ -31,13 +35,16 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
         .select('*')
         .order('created_at', { ascending: false });
 
+
       setAssessments(assessmentData || []);
+
 
       // Fetch student's submissions
       const { data: submissionData } = await supabase
         .from('submissions')
         .select('*')
         .eq('student_id', user.id);
+
 
       setSubmissions(submissionData || []);
     } catch (error) {
@@ -47,21 +54,25 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
     }
   };
 
+
   const hasSubmitted = (assessmentId: string) => {
     return submissions.some((s) => s.assessment_id === assessmentId);
   };
+
 
   const getSubmission = (assessmentId: string) => {
     return submissions.find((s) => s.assessment_id === assessmentId);
   };
 
-  // ✅ NEW: Handle Start Test button click
+
+  // ✅ Handle Start Test button click
   const handleStartTest = (assessment: Assessment) => {
     setSelectedAssessment(assessment);
     setShowInstructions(true);
   };
 
-  // ✅ NEW: Handle when student agrees to instructions
+
+  // ✅ Handle when student agrees to instructions
   const handleAgreeToInstructions = () => {
     if (selectedAssessment) {
       setShowInstructions(false);
@@ -69,11 +80,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
     }
   };
 
-  // ✅ NEW: Handle when student cancels
+
+  // ✅ Handle when student cancels
   const handleCancelTest = () => {
     setShowInstructions(false);
     setSelectedAssessment(null);
   };
+
 
   if (loading) {
     return (
@@ -86,15 +99,45 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
     );
   }
 
+
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <NavigationSidebar user={user} />
+
 
       <div className="flex-1 p-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Student Dashboard</h2>
           <p className="text-gray-600">View and attempt available assessments</p>
         </div>
+
+
+        {/* ===== NEW: Coding Lab Quick Access Card ===== */}
+        <div className="mb-6 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Code2 className="w-6 h-6" />
+                <h3 className="text-xl font-bold">Coding Practice Lab</h3>
+              </div>
+              <p className="text-blue-100 mb-4">
+                Solve coding problems, practice your programming skills, and track your progress
+              </p>
+              <button
+                onClick={() => navigate('/coding-lab')}
+                className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+              >
+                Start Coding
+              </button>
+            </div>
+            <div className="hidden md:block">
+              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center">
+                <Code2 className="w-12 h-12" />
+              </div>
+            </div>
+          </div>
+        </div>
+
 
         {/* AI Assistant Quick Access Card */}
         <div className="mb-6 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-6 text-white shadow-lg">
@@ -122,6 +165,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
           </div>
         </div>
 
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -136,6 +180,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
             </div>
           </div>
 
+
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
@@ -147,6 +192,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
               </div>
             </div>
           </div>
+
 
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
@@ -170,11 +216,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
           </div>
         </div>
 
+
         {/* Assessments List */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <h3 className="text-xl font-semibold text-gray-800">Available Assessments</h3>
           </div>
+
 
           {assessments.length === 0 ? (
             <div className="p-8 text-center">
@@ -185,6 +233,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
               {assessments.map((assessment) => {
                 const submitted = hasSubmitted(assessment.id);
                 const submission = getSubmission(assessment.id);
+
 
                 return (
                   <div key={assessment.id} className="p-6 hover:bg-gray-50 transition-colors">
@@ -214,6 +263,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
                         )}
                       </div>
 
+
                       <div className="ml-4">
                         {submitted ? (
                           <button
@@ -224,7 +274,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
                             View Results
                           </button>
                         ) : (
-                          // ✅ CHANGED: Now shows instructions modal instead of direct navigation
                           <button
                             onClick={() => handleStartTest(assessment)}
                             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
@@ -243,7 +292,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* ✅ NEW: Test Instructions Modal */}
+
+      {/* Test Instructions Modal */}
       {showInstructions && selectedAssessment && (
         <TestInstructions
           assessmentTitle={selectedAssessment.title}
@@ -255,5 +305,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
     </div>
   );
 };
+
 
 export default StudentDashboard;

@@ -1,15 +1,17 @@
-// src/components/FacultyDashboard.tsx
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import type { User, Assessment, Submission } from '../utils/supabaseClient';
 import NavigationSidebar from './NavigationSidebar';
-import { FileText, Users, TrendingUp } from 'lucide-react';
+import { FileText, Users, TrendingUp, Code2 } from 'lucide-react';
 import AssessmentSubmissions from './AssessmentSubmissions';
 import { useNavigate } from 'react-router-dom';
+
 
 interface FacultyDashboardProps {
   user: User;
 }
+
 
 const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
   const navigate = useNavigate();
@@ -24,9 +26,11 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
   const [showSubmissions, setShowSubmissions] = useState(false);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | null>(null);
 
+
   useEffect(() => {
     fetchData();
   }, [user.id]);
+
 
   const fetchData = async () => {
     try {
@@ -37,7 +41,9 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
         .eq('faculty_id', user.id)
         .order('created_at', { ascending: false });
 
+
       setAssessments(assessmentData || []);
+
 
       // Fetch submissions for faculty's assessments
       if (assessmentData && assessmentData.length > 0) {
@@ -47,7 +53,9 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
           .select('*')
           .in('assessment_id', assessmentIds);
 
+
         setSubmissions(submissionData || []);
+
 
         // Calculate stats
         const totalSubmissions = submissionData?.length || 0;
@@ -55,6 +63,7 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
           totalSubmissions > 0
             ? submissionData!.reduce((sum, s) => sum + s.total_score, 0) / totalSubmissions
             : 0;
+
 
         setStats({
           totalAssessments: assessmentData.length,
@@ -69,9 +78,11 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
     }
   };
 
+
   const getSubmissionCount = (assessmentId: string) => {
     return submissions.filter((s) => s.assessment_id === assessmentId).length;
   };
+
 
   if (loading) {
     return (
@@ -84,15 +95,45 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
     );
   }
 
+
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <NavigationSidebar user={user} />
+
 
       <div className="flex-1 p-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Faculty Dashboard</h2>
           <p className="text-gray-600">Manage your assessments and view student performance</p>
         </div>
+
+
+        {/* ===== NEW: Coding Management Quick Access Card ===== */}
+        <div className="mb-6 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Code2 className="w-6 h-6" />
+                <h3 className="text-xl font-bold">Coding Problem Management</h3>
+              </div>
+              <p className="text-emerald-100 mb-4">
+                Create, manage, and track coding problems for your students. Set difficulty levels, add test cases, and monitor submissions
+              </p>
+              <button
+                onClick={() => navigate('/coding-management')}
+                className="bg-white text-emerald-600 px-6 py-2 rounded-lg font-medium hover:bg-emerald-50 transition-colors"
+              >
+                Manage Problems
+              </button>
+            </div>
+            <div className="hidden md:block">
+              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center">
+                <Code2 className="w-12 h-12" />
+              </div>
+            </div>
+          </div>
+        </div>
+
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -108,6 +149,7 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
             </div>
           </div>
 
+
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
@@ -119,6 +161,7 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
               </div>
             </div>
           </div>
+
 
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
@@ -133,11 +176,13 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
           </div>
         </div>
 
+
         {/* Assessments List */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <h3 className="text-xl font-semibold text-gray-800">Your Assessments</h3>
           </div>
+
 
           {assessments.length === 0 ? (
             <div className="p-8 text-center">
@@ -193,6 +238,7 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
           )}
         </div>
 
+
         {/* Submissions Modal */}
         {showSubmissions && selectedAssessmentId && (
           <AssessmentSubmissions
@@ -204,5 +250,6 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
     </div>
   );
 };
+
 
 export default FacultyDashboard;

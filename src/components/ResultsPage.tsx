@@ -109,7 +109,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({ user }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-blue-50 rounded-lg p-4">
                 <p className="text-sm text-gray-600 mb-1">Total Score</p>
-                <p className="text-3xl font-bold text-primary-400">{submission.total_score}%</p>
+                <p className="text-3xl font-bold text-gray-600">{submission.total_score}%</p>
               </div>
 
               <div className="bg-green-50 rounded-lg p-4">

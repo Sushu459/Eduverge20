@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   BookOpen,
   LogOut,
@@ -12,41 +12,49 @@ import {
   Lock,
   BarChart3,
   Users,
-  
-} from 'lucide-react';
-import { signOut } from '../utils/auth';
-import type { User } from '../utils/supabaseClient';
-
-
+  Code2,
+} from 'lucide-react'
+import { signOut } from '../utils/auth'
+import type { User } from '../utils/supabaseClient'
 
 
 interface NavigationSidebarProps {
-  user: User;
+  user: User | null | undefined
 }
 
 
-
 const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate = useNavigate()
+  const location = useLocation()
 
-
+  // ===== NEW: Handle loading state =====
+  if (!user) {
+    return (
+      <div className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col shadow-sm">
+        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-2 bg-blue-600 rounded-lg">
+              <BookOpen className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-gray-800">EduVerge</h1>
+          </div>
+          <p className="text-sm font-medium text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleSignOut = async () => {
     try {
-      await signOut();
-      navigate('/login');
-      window.location.reload();
+      await signOut()
+      navigate('/login')
+      window.location.reload()
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('Error signing out:', error)
     }
-  };
+  }
 
-
-
-  const isActive = (path: string) => location.pathname === path;
-
-
+  const isActive = (path: string) => location.pathname === path
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col shadow-sm">
@@ -58,9 +66,9 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
           </div>
           <h1 className="text-xl font-bold text-gray-800">EduVerge</h1>
         </div>
-        <p className="text-sm font-medium text-gray-800">{user.full_name}</p>
+        <p className="text-sm font-medium text-gray-800">{user.full_name || 'User'}</p>
         <p className="text-xs text-gray-500 capitalize mt-1">
-           {user.role === 'admin' 
+          {user.role === 'admin' 
             ? '🔐 Admin' 
             : user.role === 'faculty' 
             ? '👨‍🏫 Faculty' 
@@ -68,12 +76,10 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
         </p>
       </div>
 
-
-
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
         {/* Dashboard */}
-        {/* <Link
+        <Link
           to="/"
           className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
             isActive('/')
@@ -82,80 +88,66 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
           }`}
         >
           <Home className="w-5 h-5" />
-          <span>Dashboar</span>
-        </Link> */}
-          
+          <span>Dashboard</span>
+        </Link>
 
+        {/* Admin Navigation */}
+        {user.role === 'admin' && (
+          <>
+            <Link
+              to="/admin/users"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
+                isActive('/admin/users')
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
+              }`}
+            >
+              <Users className="w-5 h-5" />
+              <span>User Management</span>
+            </Link>
 
-          {/* amin navigation */}
-          {user.role === 'admin' && (
-  <>
-    <Link
-      to="/admin/dashboard"
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
-        isActive('/admin/dashboard')
-          ? 'bg-blue-100 text-blue-700'
-          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
-      }`}
-    >
-      <BarChart3 className="w-5 h-5" />
-      <span>Admin Dashboard</span>
-    </Link>
+            <Link
+              to="/admin/submissions"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
+                isActive('/admin/submissions')
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
+              }`}
+            >
+              <FileText className="w-5 h-5" />
+              <span>View Submissions</span>
+            </Link>
 
-    <Link
-      to="/admin/users"
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
-        isActive('/admin/users')
-          ? 'bg-blue-100 text-blue-700'
-          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
-      }`}
-    >
-      <Users className="w-5 h-5" />
-      <span>User Management</span>
-    </Link>
+            <Link
+              to="/admin/analytics"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
+                isActive('/admin/analytics')
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
+              }`}
+            >
+              <BarChart3 className="w-5 h-5" />
+              <span>Analytics</span>
+            </Link>
 
-    <Link
-      to="/admin/submissions"
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
-        isActive('/admin/submissions')
-          ? 'bg-blue-100 text-blue-700'
-          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
-      }`}
-    >
-      <FileText className="w-5 h-5" />
-      <span>View Submissions</span>
-    </Link>
-
-    <Link
-      to="/admin/analytics"
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
-        isActive('/admin/analytics')
-          ? 'bg-blue-100 text-blue-700'
-          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
-      }`}
-    >
-      <BarChart3 className="w-5 h-5" />
-      <span>Analytics</span>
-    </Link>
-  </>
-)}
-
-
+            {/* Admin Coding Analytics Link */}
+            <Link
+              to="/admin/coding-analytics"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
+                isActive('/admin/coding-analytics')
+                  ? 'bg-cyan-100 text-cyan-700'
+                  : 'text-gray-700 hover:bg-cyan-50 hover:text-cyan-700'
+              }`}
+            >
+              <Code2 className="w-5 h-5" />
+              <span>Coding Analytics</span>
+            </Link>
+          </>
+        )}
 
         {/* Faculty Navigation */}
         {user.role === 'faculty' && (
           <>
-          <Link
-          to="/"
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
-            isActive('/faculty/dashboard')
-              ? 'bg-blue-100 text-blue-700'
-              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
-          }`}
-        >
-          <Home className="w-5 h-5" />
-          <span>Dashboar</span>
-        </Link>
             <Link
               to="/create-assessment"
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
@@ -168,8 +160,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
               <span>Create Assessment</span>
             </Link>
 
-
-
             <Link
               to="/course-materials"
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
@@ -181,27 +171,25 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
               <FileText className="w-5 h-5" />
               <span>Course Materials</span>
             </Link>
+
+            {/* Faculty Coding Management Link */}
+            <Link
+              to="/coding-management"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
+                isActive('/coding-management')
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-700'
+              }`}
+            >
+              <Code2 className="w-5 h-5" />
+              <span>Coding Problems</span>
+            </Link>
           </>
         )}
-
-
 
         {/* Student Navigation */}
         {user.role === 'student' && (
           <>
-
-          <Link
-          to="/"
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
-            isActive('/faculty/dashboard')
-              ? 'bg-blue-100 text-blue-700'
-              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
-          }`}
-        >
-          <Home className="w-5 h-5" />
-          <span>Dashboar</span>
-        </Link>
-        
             <Link
               to="/courses"
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
@@ -214,6 +202,18 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
               <span>Course Materials</span>
             </Link>
 
+            {/* Student Coding Lab Link */}
+            <Link
+              to="/coding-lab"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
+                isActive('/coding-lab')
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
+              }`}
+            >
+              <Code2 className="w-5 h-5" />
+              <span>Coding Lab</span>
+            </Link>
 
             {/* Score Calculator Link */}
             <Link
@@ -227,7 +227,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
               <Calculator className="w-5 h-5" />
               <span>Score Calculator</span>
             </Link>
-
 
             {/* AI Assistant Link */}
             <Link
@@ -244,16 +243,11 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
           </>
         )}
 
-
-
         {/* Divider for Settings */}
         <div className="my-4 h-px bg-gray-200"></div>
 
-
-
         {/* Settings Section */}
         <div className="text-xs font-semibold text-gray-500 uppercase px-4 py-2">Settings</div>
-
 
         {/* My Profile */}
         <Link
@@ -268,8 +262,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
           <span>My Profile</span>
         </Link>
 
-
-
         {/* Change Password */}
         <Link
           to="/change-password"
@@ -282,18 +274,10 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
           <Lock className="w-5 h-5" />
           <span>Change Password</span>
         </Link>
-
-
-
-        
       </nav>
-
-
 
       {/* Divider */}
       <div className="mx-4 h-px bg-gray-200"></div>
-
-
 
       {/* Sign Out */}
       <div className="p-4">
@@ -306,9 +290,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
         </button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-
-
-export default NavigationSidebar;
+export default NavigationSidebar

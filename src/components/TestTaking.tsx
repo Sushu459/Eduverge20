@@ -1,4 +1,3 @@
-// src/pages/TestTaking.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
@@ -9,6 +8,9 @@ import {
   getOrCreateTestSession,
   calculateRemainingTime,
   completeTestSession,
+  loadDraftAnswers,
+  saveDraftAnswers,
+  deleteDraftAnswers,
   type TestSession,
 } from '../utils/testTimer';
 import { Clock, Send, AlertCircle } from 'lucide-react';
@@ -31,7 +33,6 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
   const [isTimeExpired, setIsTimeExpired] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ FIX: Initialize test (runs on mount and assessmentId change)
   useEffect(() => {
     if (!assessmentId) {
       setError('Assessment ID is missing');
@@ -42,9 +43,8 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
     const initializeTest = async () => {
       try {
         setLoading(true);
-        console.log('🔄 Initializing test for assessment:', assessmentId);
+        console.log('🔄 Initializing test...');
 
-        // Fetch assessment
         const { data: assessmentData, error: assessmentError } = await supabase
           .from('assessments')
           .select('*')
@@ -52,7 +52,7 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
           .single();
 
         if (assessmentError || !assessmentData) {
-          console.error('Assessment fetch error:', assessmentError);
+          console.error('❌ Assessment error:', assessmentError);
           setError('Failed to load assessment');
           setLoading(false);
           return;
@@ -60,7 +60,6 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
 
         setAssessment(assessmentData);
 
-        // Fetch questions
         const { data: questionsData, error: questionsError } = await supabase
           .from('questions')
           .select('*')
@@ -68,7 +67,7 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
           .order('question_number', { ascending: true });
 
         if (questionsError) {
-          console.error('Questions fetch error:', questionsError);
+          console.error('❌ Questions error:', questionsError);
           setError('Failed to load questions');
           setLoading(false);
           return;
@@ -76,35 +75,35 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
 
         setQuestions(questionsData || []);
 
-        // ✅ FIX: Get or create test session - ALWAYS checks database
         const session = await getOrCreateTestSession(
           assessmentId,
           assessmentData.duration_minutes
         );
+        
         setTestSession(session);
 
-        // ✅ FIX: Calculate remaining time from server
+        const draftAnswers = await loadDraftAnswers(session.id);
+        setAnswers(draftAnswers);
+
         const remaining = calculateRemainingTime(session);
-        console.log(`⏱️ Time remaining: ${remaining}s (${Math.floor(remaining / 60)}m ${remaining % 60}s)`);
         setTimeLeft(remaining);
 
         if (remaining <= 0) {
           setIsTimeExpired(true);
-          alert('⏱️ Time expired for this assessment');
+          alert('⏱️ Time expired for this test');
         }
 
         setLoading(false);
       } catch (error: any) {
-        console.error('Error initializing test:', error);
-        setError('Error loading test: ' + (error.message || 'Unknown error'));
+        console.error('❌ Init error:', error);
+        setError('Error loading test: ' + (error.message || 'Unknown'));
         setLoading(false);
       }
     };
 
     initializeTest();
-  }, [assessmentId, user.id]); // Re-run if assessmentId changes
+  }, [assessmentId]);
 
-  // ✅ FIX: Timer - updates every second from server time
   useEffect(() => {
     if (!testSession || isTimeExpired || submitting) return;
 
@@ -112,10 +111,10 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
       const remaining = calculateRemainingTime(testSession);
 
       if (remaining <= 0) {
+        console.warn('⏱️ Time expired!');
         setIsTimeExpired(true);
         setTimeLeft(0);
         clearInterval(timer);
-        console.warn('⏱️ Time expired!');
         handleAutoSubmit();
       } else {
         setTimeLeft(remaining);
@@ -125,7 +124,22 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
     return () => clearInterval(timer);
   }, [testSession, isTimeExpired, submitting]);
 
+  useEffect(() => {
+    if (!testSession || submitting || Object.keys(answers).length === 0) return;
+
+    console.log('💾 Auto-saving answers...');
+    saveDraftAnswers(testSession.id, answers);
+
+    const saveInterval = setInterval(() => {
+      console.log('💾 Auto-saving answers...');
+      saveDraftAnswers(testSession.id, answers);
+    }, 5000);
+
+    return () => clearInterval(saveInterval);
+  }, [testSession, answers, submitting]);
+
   const handleAnswerChange = (questionId: string, answer: string) => {
+    console.log(`✏️ Answer changed for Q${questionId}: ${answer}`);
     setAnswers(prev => ({ ...prev, [questionId]: answer }));
   };
 
@@ -137,7 +151,7 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
   const handleSubmit = async () => {
     if (submitting) return;
 
-    const confirmed = window.confirm('Are you sure you want to submit your test?');
+    const confirmed = window.confirm('Are you sure you want to submit?');
     if (!confirmed) return;
 
     await submitTest(false);
@@ -149,18 +163,12 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
     setSubmitting(true);
 
     try {
-      // Mark session as completed
       await completeTestSession(testSession.id);
 
-      // Auto-grade MCQ
       const mcqScore = autoGradeMCQ(questions, answers);
-
-      // Calculate total marks
       const totalMarks = questions.reduce((sum, q) => sum + q.marks, 0);
-      const percentageScore =
-        totalMarks > 0 ? Math.round((mcqScore / totalMarks) * 100) : 0;
+      const percentageScore = totalMarks > 0 ? Math.round((mcqScore / totalMarks) * 100) : 0;
 
-      // Submit with new columns
       const { data: submission, error: submitError } = await supabase
         .from('submissions')
         .insert({
@@ -177,20 +185,16 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
         .select()
         .single();
 
-      if (submitError) {
-        throw submitError;
-      }
+      if (submitError) throw submitError;
 
-      console.log('✅ Test submitted successfully');
-      alert(
-        isAutoSubmit
-          ? '✅ Test auto-submitted due to time expiry!'
-          : '✅ Test submitted successfully!'
-      );
+      await deleteDraftAnswers(testSession.id);
+
+      console.log('✅ Test submitted');
+      alert(isAutoSubmit ? '✅ Test auto-submitted!' : '✅ Test submitted!');
       navigate(`/results/${submission.id}`);
     } catch (error: any) {
-      console.error('Error submitting test:', error);
-      setError('Error submitting test: ' + (error.message || 'Unknown error'));
+      console.error('❌ Submit error:', error);
+      setError('Error submitting: ' + error.message);
       alert('Error submitting test. Please try again.');
     } finally {
       setSubmitting(false);
@@ -272,7 +276,7 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
             <AlertCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-red-600 mb-2">⏱️ Time Expired</h2>
             <p className="text-gray-600 mb-6">
-              Your test time has been used up. Your answers have been auto-submitted.
+              Your test has been auto-submitted.
             </p>
             <button
               onClick={() => navigate('/')}
@@ -292,7 +296,6 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
 
       <div className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-between">
               <div>
@@ -304,7 +307,6 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
                 </p>
               </div>
 
-              {/* Timer */}
               <div
                 className={`text-right px-6 py-4 rounded-lg border-2 ${getTimeBgColor()} ${
                   timeLeft <= 300 ? 'border-red-200' : 'border-green-200'
@@ -323,13 +325,11 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
               </div>
             </div>
 
-            {/* Security Notice */}
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
-              🔒 Your timer is secure and server-managed. Refreshing the page will NOT reset your time.
+              🔒 Your answers are auto-saved every 5 seconds. Refreshing will NOT lose your answers.
             </div>
           </div>
 
-          {/* Questions */}
           <div className="space-y-6 mb-6">
             {questions.map((question, index) => (
               <div
@@ -386,7 +386,6 @@ const TestTaking: React.FC<TestTakingProps> = ({ user }) => {
             ))}
           </div>
 
-          {/* Submit Button */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
               <p className="text-gray-600">

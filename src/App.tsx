@@ -22,12 +22,18 @@ import AIAssistantModule from './components/AIAssistant/AIAssistantModule';
 // Components - User Settings
 import { ChangePassword, UserProfile as UserProfileComponent } from './components/UserSettings';
 
-// Components - Admin (NEW)
+// Components - Admin
 import AdminDashboard from './components/Admin/AdminDashboardd';
 import AdminUserManagement from './components/Admin/AdminUserManagement';
 import AdminAnalytics from './components/Admin/AdminAnalytics';
-
 import AdminSubmissions from './components/Admin/AdminSubmissions';
+
+// ===== NEW: Coding Practice Lab Components =====
+import StudentCodingLabPage from './pages/CodingPractice/StudentCodingLabPage';
+import FacultyCodingManagement from './pages/CodingPractice/FacultyCodingManagement';
+import AdminCodingAnalytics from './pages/CodingPractice/AdminCodingAnalytics';
+import SubmissionView from './pages/CodingPractice/SubmissionView';
+
 // Type conversion utility
 const convertAuthUserToComponentUser = (authUser: AuthUser): any => {
   return {
@@ -111,11 +117,65 @@ const App: React.FC = () => {
             )
           }
         />
-        {/* admin submisssion view */}
-        <Route path="/admin/submissions" 
-        element={<AdminSubmissions 
-        user={user} 
-        />} />
+        <Route
+          path="/admin/submissions"
+          element={
+            user && user.role === 'admin' ? (
+              <AdminSubmissions user={user} />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
+        {/* ===== CODING PRACTICE LAB ROUTES (NEW) ===== */}
+        {/* Student - View and solve problems */}
+        <Route
+          path="/coding-lab"
+          element={
+            user && user.role === 'student' ? (
+              <StudentCodingLabPage user={componentUser} />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
+        {/* Faculty - Manage coding problems */}
+        <Route
+          path="/coding-management"
+          element={
+            user && user.role === 'faculty' ? (
+              <FacultyCodingManagement user={componentUser} />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
+        {/* Admin - Coding analytics */}
+        <Route
+          path="/admin/coding-analytics"
+          element={
+            user && user.role === 'admin' ? (
+              <AdminCodingAnalytics />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
+        {/* View submission details - accessible to student (own) and admin/faculty */}
+        <Route
+          path="/submission/:id"
+          element={
+            user ? (
+              <SubmissionView />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
 
         {/* ===== MAIN DASHBOARD ROUTE ===== */}
         <Route
