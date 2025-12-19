@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../utils/supabaseClient'
 import { CodingQuestion } from '../../utils/codingLabService'
-import { Eye, Edit2, Plus, CheckCircle, AlertCircle, Clock } from 'lucide-react'
-
+import { Eye, Edit2, Plus, CheckCircle, AlertCircle, Clock, Trash2, Lock } from 'lucide-react'
 
 interface FacultyCodingManagementProps {
   user: any
@@ -20,6 +19,15 @@ interface CodingSubmission {
   submitted_at: string
 }
 
+interface HiddenTestCase {
+  id: string
+  question_id: string
+  input: string
+  expected_output: string
+  test_number: number
+  is_active: boolean
+  created_at: string
+}
 
 const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user }) => {
   const [questions, setQuestions] = useState<CodingQuestion[]>([])
@@ -37,20 +45,28 @@ const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user 
     is_published: false,
   })
 
-  // ===== NEW STATE FOR SUBMISSIONS =====
+  // ===== SUBMISSIONS STATES =====
   const [submissions, setSubmissions] = useState<CodingSubmission[]>([])
   const [submissionCounts, setSubmissionCounts] = useState<Record<string, number>>({})
   const [showSubmissionsModal, setShowSubmissionsModal] = useState(false)
-  // Removed unused selectedProblemId state
   const [selectedProblemTitle, setSelectedProblemTitle] = useState('')
   const [selectedSubmission, setSelectedSubmission] = useState<CodingSubmission | null>(null)
-  const [showCodeModal, setShowCodeModal] = useState(false)
+  //const [showCodeModal, setShowCodeModal] = useState(false)
 
+  // ===== HIDDEN TEST CASES STATES =====
+  const [showHiddenTestsModal, setShowHiddenTestsModal] = useState(false)
+  const [selectedProblemId, setSelectedProblemId] = useState<string | null>(null)
+  const [hiddenTests, setHiddenTests] = useState<HiddenTestCase[]>([])
+  const [hiddenTestsCount, setHiddenTestsCount] = useState<Record<string, number>>({})
+  const [addingTest, setAddingTest] = useState(false)
+  const [newTestData, setNewTestData] = useState({
+    input: '',
+    expected_output: '',
+  })
 
   useEffect(() => {
     fetchQuestions()
   }, [])
-
 
   const fetchQuestions = async () => {
     try {
@@ -63,7 +79,7 @@ const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user 
       if (error) throw error
       setQuestions(data || [])
 
-      // ===== NEW: Fetch submission counts =====
+      // Fetch submission counts
       if (data && data.length > 0) {
         const problemIds = data.map(p => p.id)
         const { data: submissionData } = await supabase
@@ -76,13 +92,112 @@ const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user 
           counts[sub.question_id] = (counts[sub.question_id] || 0) + 1
         })
         setSubmissionCounts(counts)
+
+        // Fetch hidden test counts
+        const { data: hiddenTestData } = await supabase
+          .from('hidden_test_cases')
+          .select('question_id')
+          .in('question_id', problemIds)
+
+        const testCounts: Record<string, number> = {}
+        hiddenTestData?.forEach(test => {
+          testCounts[test.question_id] = (testCounts[test.question_id] || 0) + 1
+        })
+        setHiddenTestsCount(testCounts)
       }
     } catch (err) {
       console.error('❌ Error fetching questions:', err)
     }
   }
 
-  // ===== NEW: Fetch submissions for a problem =====
+  // ===== HIDDEN TEST CASES FUNCTIONS =====
+  const fetchHiddenTests = async (problemId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('hidden_test_cases')
+        .select('*')
+        .eq('question_id', problemId)
+        .order('test_number', { ascending: true })
+
+      if (error) throw error
+      setHiddenTests(data || [])
+      setSelectedProblemId(problemId)
+      setShowHiddenTestsModal(true)
+    } catch (error) {
+      console.error('❌ Error fetching hidden tests:', error)
+    }
+  }
+
+  const addHiddenTest = async () => {
+    if (!selectedProblemId || !newTestData.input || !newTestData.expected_output) {
+      alert('Please fill in both input and expected output')
+      return
+    }
+
+    try {
+      const testNumber = hiddenTests.length + 1
+      const { data, error } = await supabase
+        .from('hidden_test_cases')
+        .insert([
+          {
+            question_id: selectedProblemId,
+            input: newTestData.input,
+            expected_output: newTestData.expected_output,
+            test_number: testNumber,
+            is_active: true,
+            faculty_id: user?.id,
+          },
+        ])
+        .select()
+
+      if (error) throw error
+      
+      setHiddenTests([...hiddenTests, data[0]])
+      setNewTestData({ input: '', expected_output: '' })
+      setAddingTest(false)
+      fetchQuestions() // Update counts
+    } catch (error) {
+      console.error('❌ Error adding hidden test:', error)
+      alert('Failed to add test case')
+    }
+  }
+
+  const deleteHiddenTest = async (testId: string) => {
+    if (!confirm('Delete this test case?')) return
+
+    try {
+      const { error } = await supabase
+        .from('hidden_test_cases')
+        .delete()
+        .eq('id', testId)
+
+      if (error) throw error
+      
+      setHiddenTests(hiddenTests.filter(t => t.id !== testId))
+      fetchQuestions() // Update counts
+    } catch (error) {
+      console.error('❌ Error deleting hidden test:', error)
+    }
+  }
+
+  const toggleTestActive = async (testId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('hidden_test_cases')
+        .update({ is_active: !currentStatus })
+        .eq('id', testId)
+
+      if (error) throw error
+      
+      setHiddenTests(hiddenTests.map(t => 
+        t.id === testId ? { ...t, is_active: !currentStatus } : t
+      ))
+    } catch (error) {
+      console.error('❌ Error updating test:', error)
+    }
+  }
+
+  // ===== SUBMISSIONS FUNCTIONS =====
   const fetchSubmissions = async (problemId: string, problemTitle: string) => {
     try {
       const { data } = await supabase
@@ -117,7 +232,6 @@ const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user 
     }
   }
 
-  // ===== NEW: Get status badge =====
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'accepted':
@@ -144,7 +258,6 @@ const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user 
     }
   }
 
-  // ===== NEW: Delete submission =====
   const deleteSubmission = async (submissionId: string) => {
     if (confirm('Delete this submission?')) {
       try {
@@ -154,13 +267,12 @@ const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user 
           .eq('id', submissionId)
 
         setSubmissions(submissions.filter(s => s.id !== submissionId))
-        fetchQuestions() // Refresh counts
+        fetchQuestions()
       } catch (error) {
         console.error('❌ Error deleting submission:', error)
       }
     }
   }
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -378,6 +490,7 @@ const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user 
                 <th className="p-4 text-left">Language</th>
                 <th className="p-4 text-left">Status</th>
                 <th className="p-4 text-left">Submissions</th>
+                <th className="p-4 text-left">Hidden Tests</th>
                 <th className="p-4 text-left">Actions</th>
               </tr>
             </thead>
@@ -403,7 +516,21 @@ const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user 
                       {submissionCounts[q.id] || 0}
                     </span>
                   </td>
-                  <td className="p-4 space-x-2 flex items-center gap-2">
+                  <td className="p-4">
+                    <span className="font-semibold text-purple-600 flex items-center gap-1">
+                      <Lock className="w-4 h-4" />
+                      {hiddenTestsCount[q.id] || 0}
+                    </span>
+                  </td>
+                  <td className="p-4 space-x-2 flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => fetchHiddenTests(q.id)}
+                      className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 flex items-center gap-1 text-sm"
+                      title="Manage hidden test cases"
+                    >
+                      <Lock className="w-4 h-4" />
+                      Tests
+                    </button>
                     <button
                       onClick={() => fetchSubmissions(q.id, q.title)}
                       className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-1 text-sm"
@@ -432,7 +559,129 @@ const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user 
         </div>
       </div>
 
-      {/* ===== NEW: Submissions Modal ===== */}
+      {/* ===== HIDDEN TESTS MODAL ===== */}
+      {showHiddenTestsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-96 overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <Lock className="w-5 h-5" />
+                  Hidden Test Cases
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">These tests are hidden from students</p>
+              </div>
+              <button
+                onClick={() => setShowHiddenTestsModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Existing Hidden Tests */}
+              {hiddenTests.length > 0 ? (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-800">Test Cases ({hiddenTests.length})</h4>
+                  {hiddenTests.map((test, idx) => (
+                    <div key={test.id} className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-semibold text-gray-800">Test {idx + 1}</span>
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={test.is_active}
+                              onChange={() => toggleTestActive(test.id, test.is_active)}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm text-gray-600">Active</span>
+                          </label>
+                          <button
+                            onClick={() => deleteHiddenTest(test.id)}
+                            className="px-2 py-1 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-xs text-gray-600 font-medium mb-1">Input:</p>
+                          <pre className="bg-white p-2 rounded border border-gray-200 text-xs overflow-x-auto">
+                            {test.input}
+                          </pre>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600 font-medium mb-1">Expected Output:</p>
+                          <pre className="bg-white p-2 rounded border border-gray-200 text-xs overflow-x-auto">
+                            {test.expected_output}
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No hidden test cases yet. Add one to prevent cheating!
+                </div>
+              )}
+
+              {/* Add New Test */}
+              {!addingTest ? (
+                <button
+                  onClick={() => setAddingTest(true)}
+                  className="w-full mt-4 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Test Case
+                </button>
+              ) : (
+                <div className="border rounded-lg p-4 bg-purple-50">
+                  <h4 className="font-semibold text-gray-800 mb-3">New Test Case</h4>
+                  <div className="space-y-3">
+                    <textarea
+                      placeholder="Input (what student will type)"
+                      value={newTestData.input}
+                      onChange={(e) => setNewTestData({ ...newTestData, input: e.target.value })}
+                      className="w-full p-2 border rounded font-mono text-sm"
+                      rows={3}
+                    />
+                    <textarea
+                      placeholder="Expected Output"
+                      value={newTestData.expected_output}
+                      onChange={(e) => setNewTestData({ ...newTestData, expected_output: e.target.value })}
+                      className="w-full p-2 border rounded font-mono text-sm"
+                      rows={3}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={addHiddenTest}
+                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                      >
+                        Save Test
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAddingTest(false)
+                          setNewTestData({ input: '', expected_output: '' })
+                        }}
+                        className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== SUBMISSIONS MODAL ===== */}
       {showSubmissionsModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-96 overflow-y-auto">
@@ -469,7 +718,6 @@ const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user 
                         <button
                           onClick={() => {
                             setSelectedSubmission(submission)
-                            setShowCodeModal(true)
                           }}
                           className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
                         >
@@ -496,14 +744,14 @@ const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user 
         </div>
       )}
 
-      {/* ===== NEW: Code Viewer Modal ===== */}
-      {showCodeModal && selectedSubmission && (
+      {/* ===== CODE VIEWER MODAL ===== */}
+      {selectedSubmission && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
               <h3 className="text-lg font-bold text-gray-800">Code Submission - {selectedSubmission.student_name}</h3>
               <button
-                onClick={() => setShowCodeModal(false)}
+                onClick={() => setSelectedSubmission(null)}
                 className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
               >
                 ×
