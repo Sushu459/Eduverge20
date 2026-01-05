@@ -1,35 +1,35 @@
 import React, { useState, useEffect } from 'react'
+import { Search, Code2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../utils/supabaseClient'
-import { executeAndSaveCode, CodingQuestion, CodingSubmission, ExecutionResult } from '../../utils/codingLabService'
-import CodeEditor from './CodeEditor'
-
+import { CheckCircle, RefreshCcw, Circle } from 'lucide-react'
+import img from '../../assets/codingPic.jpg'
+import {
+  CodingQuestion,
+  CodingSubmission
+} from '../../utils/codingLabService'
 
 interface StudentCodingLabPageProps {
   user: any
 }
 
-
 const StudentCodingLabPage: React.FC<StudentCodingLabPageProps> = ({ user }) => {
   const navigate = useNavigate()
+
   const [questions, setQuestions] = useState<CodingQuestion[]>([])
-  const [selectedQuestion, setSelectedQuestion] = useState<CodingQuestion | null>(null)
-  const [code, setCode] = useState('')
-  const [language, setLanguage] = useState('python')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [submissions, setSubmissions] = useState<CodingSubmission[]>([])
+  const [error, setError] = useState<string | null>(null)
+
   const [filterDifficulty, setFilterDifficulty] = useState<string>('all')
   const [filterLanguage, setFilterLanguage] = useState<string>('all')
-  const [lastRunResult, setLastRunResult] = useState<ExecutionResult | null>(null)
-
+  const [searchQuery, setSearchQuery] = useState<string>('')
 
   useEffect(() => {
     fetchQuestions()
     fetchSubmissions()
   }, [])
 
-
+  /* ================= FETCH QUESTIONS ================= */
   const fetchQuestions = async () => {
     try {
       const { data, error } = await supabase
@@ -37,7 +37,6 @@ const StudentCodingLabPage: React.FC<StudentCodingLabPageProps> = ({ user }) => 
         .select('*')
         .eq('is_published', true)
         .order('created_at', { ascending: false })
-
 
       if (error) throw error
       setQuestions(data || [])
@@ -47,15 +46,13 @@ const StudentCodingLabPage: React.FC<StudentCodingLabPageProps> = ({ user }) => 
     }
   }
 
-
+  /* ================= FETCH SUBMISSIONS ================= */
   const fetchSubmissions = async () => {
     try {
       const { data, error } = await supabase
         .from('coding_submissions')
         .select('*')
         .eq('student_id', user?.id)
-        .order('submitted_at', { ascending: false })
-
 
       if (error) throw error
       setSubmissions(data || [])
@@ -64,284 +61,192 @@ const StudentCodingLabPage: React.FC<StudentCodingLabPageProps> = ({ user }) => 
     }
   }
 
-
+  /* ================= ROUTE ================= */
   const handleSelectQuestion = (question: CodingQuestion) => {
-    setSelectedQuestion(question)
-    setCode('')
-    setError(null)
-    setLastRunResult(null)
-    // Auto-select language based on question requirement
-    const lang = question.programming_language.toLowerCase()
-    if (lang === 'c++') setLanguage('cpp')
-    else if (lang === 'c#') setLanguage('csharp')
-    else setLanguage(lang)
+    navigate(`/coding-lab/${question.id}`)
   }
 
-
-  const handleRunComplete = (result: ExecutionResult) => {
-    setLastRunResult(result)
-    
-    // Show appropriate message
-    if (result.status === 'success') {
-      setError(null) // Clear any previous errors
-    } else if (result.status === 'test_failed') {
-      setError(`❌ Test Failed! Please review your code and try again.`)
-    } else if (result.status === 'error') {
-      setError('❌ Compilation Error! Please fix your code.')
-    }
-  }
-
-
-  const handleSubmitCode = async () => {
-    if (!selectedQuestion || !code.trim()) {
-      setError('Please write some code first')
-      return
-    }
-
-
-    // Check if code passed all tests (sample + hidden) before allowing submission
-    if (!lastRunResult || lastRunResult.status !== 'success') {
-      setError('❌ Your code must pass all tests before submission. Click "Run Code" and fix any failures.')
-      return
-    }
-
-    // Check if all hidden tests passed (if any exist)
-    if (lastRunResult.hiddenTestsResult) {
-      if (lastRunResult.hiddenTestsResult.testsPassed !== lastRunResult.hiddenTestsResult.totalTests) {
-        setError(`❌ All hidden tests must pass! (${lastRunResult.hiddenTestsResult.testsPassed}/${lastRunResult.hiddenTestsResult.totalTests} passed)`)
-        return
-      }
-    }
-
-
-    try {
-      setSubmitting(true)
-      setError(null)
-      const submission = await executeAndSaveCode(
-        selectedQuestion.id,
-        user.id,
-        code,
-        language
-      )
-      navigate(`/submission/${submission.id}`)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Submission failed'
-      setError(message)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-
+  /* ================= FILTER ================= */
   const filteredQuestions = questions.filter(q => {
-    if (filterDifficulty !== 'all' && q.difficulty !== filterDifficulty) return false
-    if (filterLanguage !== 'all' && q.programming_language.toLowerCase() !== filterLanguage.toLowerCase()) return false
+    if (filterDifficulty !== 'all' && q.difficulty !== filterDifficulty)
+      return false
+
+    if (
+      filterLanguage !== 'all' &&
+      q.programming_language.toLowerCase() !==
+        filterLanguage.toLowerCase()
+    )
+      return false
+
+    if (
+      searchQuery.trim() !== '' &&
+      !q.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+      return false
+
     return true
   })
 
-  // Check if current question's solution was accepted
-  const isQuestionAccepted = selectedQuestion 
-    ? submissions.some(s => s.question_id === selectedQuestion.id && s.status === 'accepted')
-    : false
-
-
+  /* ================= RENDER ================= */
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">📝 Coding Practice Lab</h1>
+
+        {/* ===== Header with Image ===== */}
+        {/* ===== Hero Header (Image fills card) ===== */}
+<div className="mb-8">
+  <div
+    className="relative rounded-xl overflow-hidden h-34 md:h-40"
+    style={{
+      backgroundImage: `url(${img})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center'
+    }}
+  >
+    {/* Dark overlay */}
+    <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/40 to-transparent" />
+
+    {/* Content */}
+    <div className="relative z-10 h-full flex items-center px-6 md:px-10">
+      <div className="flex items-start gap-4">
+        <div className="p-3 rounded-xl bg-white/20 backdrop-blur">
+          <Code2 className="text-white" size={30} />
+        </div>
+
+        <div>
+          <h1 className="text-3xl md:text-4xl font-semibold text-white">
+            Coding Practice Lab
+          </h1>
+          <p className="mt-2 text-sm md:text-base text-gray-200 max-w-xl">
+            Practice coding problems. improve logical thinking. and track your progress.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Questions List */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-4 sticky top-6">
-              <h2 className="text-lg font-bold mb-4">Problems ({filteredQuestions.length})</h2>
+        {error && (
+          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
 
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-lg font-bold mb-4">
+            Problems ({filteredQuestions.length})
+          </h2>
 
-              {/* Filters */}
-              <div className="mb-4 space-y-2">
-                <select
-                  value={filterDifficulty}
-                  onChange={(e) => setFilterDifficulty(e.target.value)}
-                  className="w-full p-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">All Difficulties</option>
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
-
-
-                <select
-                  value={filterLanguage}
-                  onChange={(e) => setFilterLanguage(e.target.value)}
-                  className="w-full p-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">All Languages</option>
-                  <option value="python">Python</option>
-                  <option value="javascript">JavaScript</option>
-                  <option value="java">Java</option>
-                  <option value="c++">C++</option>
-                </select>
-              </div>
-
-
-              {/* Questions */}
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filteredQuestions.map(q => {
-                  const submitted = submissions.some(s => s.question_id === q.id && s.status === 'accepted')
-                  const attempted = submissions.some(s => s.question_id === q.id)
-                  return (
-                    <button
-                      key={q.id}
-                      onClick={() => handleSelectQuestion(q)}
-                      className={`w-full p-3 text-left rounded transition-all ${
-                        selectedQuestion?.id === q.id
-                          ? 'bg-blue-100 border-2 border-blue-500 shadow'
-                          : 'bg-gray-100 border hover:bg-gray-200'
-                      }`}
-                    >
-                      <div className="font-semibold text-sm">{q.title}</div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium mr-2 ${
-                          q.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
-                          q.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {q.difficulty}
-                        </span>
-                        {submitted ? '✅ Passed' : attempted ? '🔄 Attempted' : '⭕ Not started'}
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+          {/* ===== Search Bar ===== */}
+          <div className="mb-4 relative">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              size={18}
+            />
+            <input
+              type="text"
+              placeholder="Search problems by title"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-3 py-3 border rounded 
+                         focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
           </div>
 
+          {/* ===== Filters ===== */}
+          <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <select
+              value={filterDifficulty}
+              onChange={(e) => setFilterDifficulty(e.target.value)}
+              className="p-2 border rounded"
+            >
+              <option value="all">All Difficulties</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
 
-          {/* Editor & Submission */}
-          <div className="lg:col-span-2">
-            {selectedQuestion ? (
-              <div className="space-y-4">
-                {/* Problem Details */}
-                <div className="bg-white rounded-lg shadow p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-2xl font-bold">{selectedQuestion.title}</h2>
-                    {isQuestionAccepted && (
-                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded text-sm font-semibold">
-                        ✅ Accepted
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-gray-600 mt-2">{selectedQuestion.description}</p>
-                  
-                  {/* Sample Input/Output */}
-                  {selectedQuestion.sample_input && (
-                    <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                      <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                        <strong className="text-blue-700">📥 Sample Input:</strong>
-                        <pre className="mt-2 font-mono text-xs bg-white p-2 rounded border border-blue-100 max-h-20 overflow-y-auto">
-                          {selectedQuestion.sample_input}
-                        </pre>
-                      </div>
-                      <div className="bg-green-50 p-3 rounded border border-green-200">
-                        <strong className="text-green-700">📤 Expected Output:</strong>
-                        <pre className="mt-2 font-mono text-xs bg-white p-2 rounded border border-green-100 max-h-20 overflow-y-auto">
-                          {selectedQuestion.sample_output}
-                        </pre>
-                      </div>
-                    </div>
-                  )}
+            <select
+              value={filterLanguage}
+              onChange={(e) => setFilterLanguage(e.target.value)}
+              className="p-2 border rounded"
+            >
+              <option value="all">All Languages</option>
+              <option value="python">Python</option>
+              {/* <option value="javascript">JavaScript</option> */}
+              <option value="java">Java</option>
+              <option value="c++">C++</option>
+            </select>
+          </div>
 
+          {/* ===== Question List ===== */}
+          <div className="space-y-2 max-h-[65vh] overflow-y-auto">
+            {filteredQuestions.map(q => {
+              const passed = submissions.some(
+                s => s.question_id === q.id && s.status === 'accepted'
+              )
+              const attempted = submissions.some(
+                s => s.question_id === q.id
+              )
 
-                  <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-                    <div className="p-2 bg-blue-100 rounded">
-                      <strong>Difficulty:</strong> {selectedQuestion.difficulty}
-                    </div>
-                    <div className="p-2 bg-green-100 rounded">
-                      <strong>Language:</strong> {selectedQuestion.programming_language}
-                    </div>
-                    <div className="p-2 bg-purple-100 rounded">
-                      <strong>Time Limit:</strong> {selectedQuestion.time_limit}s
-                    </div>
-                  </div>
-                </div>
-
-
-                {/* Code Editor with Hidden Test Support */}
-                <CodeEditor
-                  question={selectedQuestion}
-                  user={user}
-                  code={code}
-                  setCode={setCode}
-                  language={language}
-                  onRunComplete={handleRunComplete}
-                />
-
-
-                {/* Error Alert */}
-                {error && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                    {error}
-                  </div>
-                )}
-
-
-                {/* Success Alert */}
-                {lastRunResult && lastRunResult.status === 'success' && (
-                  <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                    <strong>✅ All tests passed!</strong>
-                    {lastRunResult.hiddenTestsResult && (
-                      <div className="text-sm mt-2">
-                        Sample Test: ✅ Passed<br/>
-                        Hidden Tests: ✅ {lastRunResult.hiddenTestsResult.testsPassed}/{lastRunResult.hiddenTestsResult.totalTests} Passed
-                      </div>
-                    )}
-                    Your code is ready to submit.
-                  </div>
-                )}
-
-
-                {/* Test Failed Alert */}
-                {lastRunResult && lastRunResult.status === 'test_failed' && (
-                  <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-                    <strong>❌ Test failed!</strong> Please review and try again.
-                    {lastRunResult.hiddenTestsResult && (
-                      <div className="text-sm mt-2">
-                        Hidden Tests: {lastRunResult.hiddenTestsResult.testsPassed}/{lastRunResult.hiddenTestsResult.totalTests} Passed
-                      </div>
-                    )}
-                  </div>
-                )}
-
-
-                {/* Submit Button */}
+              return (
                 <button
-                  onClick={handleSubmitCode}
-                  disabled={submitting || !code.trim() || !lastRunResult || lastRunResult.status !== 'success'}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-3 px-4 rounded text-lg transition-colors"
+                  key={q.id}
+                  onClick={() => handleSelectQuestion(q)}
+                  className="w-full p-4 text-left rounded bg-gray-100 hover:bg-blue-100 transition"
                 >
-                  {submitting ? '⏳ Submitting...' : '🚀 Submit Solution'}
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="font-semibold">{q.title}</div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        <span
+                          className={`inline-block px-2 py-1 rounded text-xs font-medium mr-2 ${
+                            q.difficulty === 'easy'
+                              ? 'bg-green-100 text-green-700'
+                              : q.difficulty === 'medium'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}
+                        >
+                          {q.difficulty}
+                        </span>
+                        {q.programming_language}
+                      </div>
+                    </div>
+
+                   <div className="flex items-center gap-2 text-sm font-medium">
+                      {passed && (
+                        <span className="flex items-center gap-1 text-green-600">
+                          <CheckCircle size={16} />
+                          Solved
+                        </span>
+                      )}
+                    
+                      {!passed && attempted && (
+                        <span className="flex items-center gap-1 text-yellow-600">
+                          <RefreshCcw size={16} />
+                          Attempted
+                        </span>
+                      )}
+
+                      {!attempted && (
+                        <span className="flex items-center gap-1 text-gray-500">
+                          <Circle size={16} />
+                          Pending
+                        </span>
+                      )}
+                    </div>
+
+                  </div>
                 </button>
-
-
-                {/* Requirement Note */}
-                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded text-sm text-yellow-800">
-                  💡 <strong>Important:</strong> Your code must pass all sample and hidden tests to submit. Click "Run Code" to test your solution first.
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow p-8 text-center">
-                <p className="text-gray-500 text-lg">📋 Select a problem to start coding</p>
-              </div>
-            )}
+              )
+            })}
           </div>
         </div>
       </div>
     </div>
   )
 }
-
 
 export default StudentCodingLabPage
