@@ -129,7 +129,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
 
       <div className="flex-1 p-8">
         <div className="mb-8">
-          <h2 className="text-4xl font-bold text-gray-800 mb-2">Admin Dashboard</h2>
+          <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-teal-700 to-pink-500 bg-clip-text text-transparent">
+  Admin Dashboard
+</h2>
           <p className="text-gray-600">System overview and management</p>
         </div>
 
