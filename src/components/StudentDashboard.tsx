@@ -123,7 +123,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user }) => {
 
       <div className="flex-1 p-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">Student Dashboard</h2>
+          <h2 className="text-3xl font-extrabold mb-2 bg-gradient-to-r from-purple-600 to-pink-800 bg-clip-text text-transparent">
+  Student Dashboard
+</h2>
+
           <p className="text-gray-600">View and attempt available assessments</p>
         </div>
 
