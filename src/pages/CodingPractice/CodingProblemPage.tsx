@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../utils/supabaseClient'
+import PremiumLoader from '../../layouts/PremiumLoader'
 import {
   CodingQuestion,
   CodingSubmission,
@@ -140,7 +141,7 @@ const CodingProblemPage: React.FC<CodingProblemPageProps> = ({ user }) => {
   }
 
   if (!question) {
-    return <div className="p-10 text-center">Loading problem...</div>
+    return <PremiumLoader message="Loading..." fullHeight={false} />
   }
 
   const isAccepted = submissions.some(
