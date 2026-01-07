@@ -170,17 +170,18 @@ const App: React.FC = () => {
           }
         />
         <Route
-          path="/coding-lab/:problemId"
-          element={
-            user && user.role === 'student' ? (
-              <DashboardLayout user={componentUser}>
-                <CodingProblemPage user={componentUser} />
-              </DashboardLayout>
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
+  path="/coding-lab/:problemId"
+  element={
+    componentUser?.role === 'student' ? (
+      // <DashboardLayout user={componentUser}>
+        <CodingProblemPage user={componentUser} />
+      // </DashboardLayout>
+    ) : (
+      <Navigate to="/login" replace />
+    )
+  }
+/>
+
         <Route
           path="/coding-management"
           element={
