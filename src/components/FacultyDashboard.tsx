@@ -278,7 +278,23 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
         </div>
 
         {/* Assessments List */}
-          <>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <h3 className="text-xl font-semibold text-gray-800">Your Assessments</h3>
+          </div>
+
+          {assessments.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-gray-500 mb-4">No assessments created yet</p>
+              <button
+                onClick={() => navigate('/create-assessment')}
+                className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                Create Your First Assessment
+              </button>
+            </div>
+          ) : (
+            <>
   {/* ================= DESKTOP TABLE ================= */}
   <div className="hidden md:block overflow-x-auto">
     <table className="w-full">
@@ -351,8 +367,14 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
             <p className="font-medium">{assessment.duration_minutes} mins</p>
           </div>
           <div>
-            <p className="text-gray-500">Submissions</p>
-            <p className="font-medium">{getSubmissionCount(assessment.id)}</p>
+           <div className="flex flex-col items-center gap-1">
+  <p className="text-gray-500 text-sm">Submissions</p>
+  <p className="flex items-center justify-center w-10 h-10 rectangle-full bg-gray-50 text-blue-600 font-semibold text-sm">
+    {getSubmissionCount(assessment.id)}
+  </p>
+</div>
+
+
           </div>
         </div>
 
@@ -368,18 +390,17 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
                 setSelectedAssessmentId(assessment.id);
                 setShowSubmissions(true);
               }}
-              className="px-3 py-1 rounded-md bg-blue-50 text-blue-600 font-medium text-sm hover:bg-blue-100 transition"
+             className="px-3 py-1 rounded-md bg-blue-50 text-blue-600 font-medium text-sm hover:bg-blue-100 transition"
 
             >
               View
             </button>
             <button
-              onClick={() => openDeleteModal(assessment.id, assessment.title)}
-              className="px-3 py-1 rounded-md bg-red-50 text-red-500 font-medium text-sm hover:bg-red-50 transition"
-
-            >
-              Delete
-            </button>
+                onClick={() => openDeleteModal(assessment.id, assessment.title)}
+                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
           </div>
         </div>
       </div>
@@ -387,6 +408,8 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
   </div>
 </>
 
+          )}
+        </div>
 
         {/* Delete Confirmation Modal */}
         {deleteModal.isOpen && (
