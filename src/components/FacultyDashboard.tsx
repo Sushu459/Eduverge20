@@ -278,72 +278,115 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
         </div>
 
         {/* Assessments List */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-800">Your Assessments</h3>
-          </div>
-
-          {assessments.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-gray-500 mb-4">No assessments created yet</p>
+          <>
+  {/* ================= DESKTOP TABLE ================= */}
+  <div className="hidden md:block overflow-x-auto">
+    <table className="w-full">
+      <thead className="bg-gray-50">
+        <tr>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submissions</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-200">
+        {assessments.map((assessment) => (
+          <tr key={assessment.id} className="hover:bg-gray-50">
+            <td className="px-6 py-4 text-sm font-medium text-gray-800">{assessment.title}</td>
+            <td className="px-6 py-4 text-sm text-gray-600">{assessment.subject}</td>
+            <td className="px-6 py-4 text-sm text-gray-600">{assessment.unit}</td>
+            <td className="px-6 py-4 text-sm text-gray-600">{assessment.duration_minutes} mins</td>
+            <td className="px-6 py-4 text-sm text-gray-600">{getSubmissionCount(assessment.id)}</td>
+            <td className="px-6 py-4 text-sm text-gray-600">
+              {new Date(assessment.created_at).toLocaleDateString()}
+            </td>
+            <td className="px-6 py-4 text-sm flex gap-2">
               <button
-                onClick={() => navigate('/create-assessment')}
-                className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg transition-colors"
+                onClick={() => {
+                  setSelectedAssessmentId(assessment.id);
+                  setShowSubmissions(true);
+                }}
+                className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium rounded-lg"
               >
-                Create Your First Assessment
+                View Submissions
               </button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submissions</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {assessments.map((assessment) => (
-                    <tr key={assessment.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-800">{assessment.title}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{assessment.subject}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{assessment.unit}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{assessment.duration_minutes} mins</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{getSubmissionCount(assessment.id)}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {new Date(assessment.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm space-x-2 flex">
-                        <button
-                          onClick={() => {
-                            setSelectedAssessmentId(assessment.id);
-                            setShowSubmissions(true);
-                          }}
-                          className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium rounded-lg transition-colors"
-                        >
-                          View Submissions
-                        </button>
-                        <button
-                          onClick={() => openDeleteModal(assessment.id, assessment.title)}
-                          className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded-lg transition-colors flex items-center gap-2"
-                          title="Delete this assessment"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+              <button
+                onClick={() => openDeleteModal(assessment.id, assessment.title)}
+                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  {/* ================= MOBILE CARDS ================= */}
+  <div className="md:hidden space-y-4 p-4">
+    {assessments.map((assessment) => (
+      <div
+        key={assessment.id}
+        className="bg-white border rounded-xl p-4 shadow-sm space-y-3"
+      >
+        {/* Header */}
+        <div>
+          <p className="font-semibold text-gray-800 text-base">
+            {assessment.title}
+          </p>
+          <p className="text-sm text-gray-500">
+            {assessment.subject} • Unit {assessment.unit}
+          </p>
         </div>
+
+        {/* Info */}
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p className="text-gray-500">Duration</p>
+            <p className="font-medium">{assessment.duration_minutes} mins</p>
+          </div>
+          <div>
+            <p className="text-gray-500">Submissions</p>
+            <p className="font-medium">{getSubmissionCount(assessment.id)}</p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-xs text-gray-500">
+            {new Date(assessment.created_at).toLocaleDateString()}
+          </p>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setSelectedAssessmentId(assessment.id);
+                setShowSubmissions(true);
+              }}
+              className="px-3 py-1 rounded-md bg-blue-50 text-blue-600 font-medium text-sm hover:bg-blue-100 transition"
+
+            >
+              View
+            </button>
+            <button
+              onClick={() => openDeleteModal(assessment.id, assessment.title)}
+              className="px-3 py-1 rounded-md bg-red-50 text-red-500 font-medium text-sm hover:bg-red-50 transition"
+
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</>
+
 
         {/* Delete Confirmation Modal */}
         {deleteModal.isOpen && (

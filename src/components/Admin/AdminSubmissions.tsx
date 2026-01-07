@@ -356,7 +356,7 @@ const AdminSubmissions: React.FC<AdminSubmissionsProps> = () => {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
@@ -447,6 +447,106 @@ const AdminSubmissions: React.FC<AdminSubmissionsProps> = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Submission Cards */}
+              <div className="md:hidden space-y-4 p-4">
+                {paginatedSubmissions.map((submission) => (
+                  <div
+                    key={submission.id}
+                    className="bg-white border rounded-xl p-4 shadow-sm space-y-3"
+                  >
+                    {/* Header */}
+                   <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-semibold text-gray-800">
+                          {submission.student_name}
+                        </p>
+                        <p className="text-sm text-gray-500 break-all">
+                          {submission.student_email}
+                        </p>
+                      </div>
+                
+                      {isGraded(submission) ? (
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm font-medium text-yellow-600">
+                            {submission.faculty_rating}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">Not graded</span>
+                      )}
+                   </div>
+
+                    {/* Assessment */}
+                    <div className="text-sm text-gray-700">
+                      <span className="font-medium">Assessment:</span>{' '}
+                      {submission.assessment_title}
+                    </div>
+
+                    {/* Scores */}
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                                   <div className="bg-blue-50 rounded-lg p-2">
+                        <p className="text-gray-500">MCQ</p>
+                        <p className="font-semibold text-blue-600">
+                          {submission.mcq_score ?? '-'}
+                        </p>
+                      </div>
+                    
+                      <div className="bg-purple-50 rounded-lg p-2">
+                        <p className="text-gray-500">Theory</p>
+                       <p className="font-semibold text-purple-600">
+                          {submission.theory_score ?? '-'}
+                        </p>
+                      </div>
+                    
+                      <div className="bg-green-50 rounded-lg p-2">
+                        <p className="text-gray-500">Total</p>
+                        <p className="font-semibold text-green-600">
+                          {submission.total_score !== null
+                           ? `${submission.total_score}/100`
+                           : '-'}
+                       </p>
+                      </div>
+                    </div>
+                          
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-2 text-xs text-gray-500">
+                      <span>
+                        {new Date(submission.submitted_at).toLocaleDateString()}
+                      </span>
+                          
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setSelectedSubmission(submission)}
+                          className="text-blue-600 font-medium"
+                        >
+                          View
+                        </button>
+                          
+                        <button
+                          onClick={() => {
+                            setSelectedSubmission(submission);
+                            setGradeForm({
+                             submissionId: submission.id,
+                              mcq_score: submission.mcq_score || 0,
+                              theory_score: submission.theory_score || 0,
+                              total_score: submission.total_score || 0,
+                              faculty_feedback: submission.faculty_feedback || '',
+                              faculty_rating: submission.faculty_rating || 0
+                            });
+                            setShowGradeModal(true);
+                          }}
+                          className="text-green-600 font-medium"
+                        >
+                          Grade
+                        </button>
+                      </div>
+                    </div>
+                        
+                  </div>
+                ))}
               </div>
 
               {/* ✨ PAGINATION CONTROLS */}

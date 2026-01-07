@@ -6,6 +6,8 @@ import { autoGradeMCQ } from '../utils/autoGrading';
 //import NavigationSidebar from './NavigationSidebar';
 import ConfirmationModal from './ConfirmationModal';
 import QuestionDisplay from '../components/TestManager/QuestionDisplay';
+import PremiumLoader from '../layouts/PremiumLoader';
+
 import {
   getOrCreateTestSession,
   calculateRemainingTime,
@@ -514,7 +516,7 @@ useEffect(() => {
       <div className="flex">
         {/* <NavigationSidebar user={user} /> */}
         <div className="flex-1 flex items-center justify-center bg-gray-50">
-          <div className="text-lg text-gray-600">Loading test...</div>
+          <PremiumLoader message="Loading test..." />
         </div>
       </div>
     );

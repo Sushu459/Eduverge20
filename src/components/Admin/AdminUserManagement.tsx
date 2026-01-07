@@ -528,7 +528,7 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
@@ -589,6 +589,65 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
                   </tbody>
                 </table>
               </div>
+              {/* Mobile User Cards */}
+              <div className="md:hidden space-y-4 p-4">
+                  {currentUsers.map((u) => (
+                   <div
+                     key={u.id}
+                     className="bg-white border rounded-xl p-4 shadow-sm space-y-3"
+                    >
+                     {/* Header */}
+                     <div className="flex justify-between items-start">
+                       <div>
+                         <p className="font-semibold text-gray-800">{u.full_name}</p>
+                         <p className="text-sm text-gray-500 break-all">{u.email}</p>
+                       </div>
+
+                       <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs capitalize">
+                         {u.role}
+                       </span>
+                     </div>
+
+                     {/* Status */}
+                     <div className="flex flex-wrap gap-2 text-xs">
+                       <span
+                         className={`px-2 py-1 rounded-full ${
+                           u.is_active
+                             ? 'bg-green-100 text-green-700'
+                             : 'bg-yellow-100 text-yellow-700'
+                         }`}
+                       >
+                         {u.is_active ? 'Active' : 'Inactive'}
+                       </span>
+
+                       <span
+                         className={`px-2 py-1 rounded-full ${
+                           u.is_blocked
+                             ? 'bg-red-100 text-red-700'
+                             : 'bg-green-100 text-green-700'
+                         }`}
+                       >
+                         {u.is_blocked ? 'Blocked' : 'Allowed'}
+                       </span>
+                     </div>
+
+                     {/* Footer */}
+                     <div className="flex items-center justify-between pt-2">
+                       <p className="text-xs text-gray-500">
+                         Created: {new Date(u.created_at).toLocaleDateString()}
+                       </p>
+                       
+                       <button
+                         onClick={() => setSelectedUser(u)}
+                         className="text-sm text-blue-600 font-medium"
+                       >
+                         Manage
+                       </button>
+                     </div>
+                   </div>
+                 ))}
+                </div>
+
 
               {/* Pagination Controls */}
               <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
@@ -737,7 +796,7 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
             {/* Header */}
             <div className="px-8 py-6 border-b border-gray-200">
               <h3 className="text-2xl font-bold text-gray-800">{selectedUser.full_name}</h3>
-              <p className="text-sm text-gray-500 mt-1">{selectedUser.email}</p>
+              <p className="text-sm text-gray-500 break-all max-w-[85%]">{selectedUser.email}</p>
             </div>
 
             {/* Body */}
