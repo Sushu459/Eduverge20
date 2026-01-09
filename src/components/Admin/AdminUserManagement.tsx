@@ -11,6 +11,7 @@ import {
   Plus,
   X
 } from 'lucide-react';
+import PremiumLoader from '../../layouts/PremiumLoader';
 
 interface AdminUserManagementProps {
   user: any;
@@ -409,7 +410,7 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
       <div className="flex">
         {/* <NavigationSidebar user={user} /> */}
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-lg text-gray-600">Loading...</div>
+          <PremiumLoader message="Loading..." fullHeight={false} />
         </div>
       </div>
     );
