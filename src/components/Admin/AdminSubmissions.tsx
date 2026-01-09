@@ -44,6 +44,11 @@ interface GradeForm {
   faculty_rating: number;
 }
 
+interface Subject {
+  id: string;
+  title: string;
+}
+
 
 const AdminSubmissions: React.FC<AdminSubmissionsProps> = () => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -51,6 +56,7 @@ const AdminSubmissions: React.FC<AdminSubmissionsProps> = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [gradedFilter, setGradedFilter] = useState<'all' | 'graded' | 'ungraded'>('all');
+  const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [showGradeModal, setShowGradeModal] = useState(false);
   const [gradeForm, setGradeForm] = useState<GradeForm>({
@@ -77,7 +83,7 @@ const AdminSubmissions: React.FC<AdminSubmissionsProps> = () => {
   useEffect(() => {
     filterSubmissions();
     setCurrentPage(1); // Reset to page 1 when filters change
-  }, [submissions, searchQuery, gradedFilter]);
+  }, [submissions, searchQuery, gradedFilter, subjectFilter]);
 
 
   const fetchSubmissions = async () => {
@@ -131,9 +137,28 @@ const AdminSubmissions: React.FC<AdminSubmissionsProps> = () => {
   };
 
 
+  // 🎯 GET UNIQUE SUBJECTS/ASSESSMENTS
+  const getUniqueSubjects = (): Subject[] => {
+    const uniqueAssessments = new Map<string, string>();
+    
+    submissions.forEach((submission) => {
+      if (!uniqueAssessments.has(submission.assessment_id)) {
+        uniqueAssessments.set(submission.assessment_id, submission.assessment_title);
+      }
+    });
+
+    return Array.from(uniqueAssessments, ([id, title]) => ({ id, title }))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  };
+
+
   const filterSubmissions = () => {
     let filtered = [...submissions];
 
+    // Subject filter
+    if (subjectFilter !== 'all') {
+      filtered = filtered.filter(s => s.assessment_id === subjectFilter);
+    }
 
     // Search filter
     if (searchQuery) {
@@ -145,14 +170,12 @@ const AdminSubmissions: React.FC<AdminSubmissionsProps> = () => {
       );
     }
 
-
     // Graded filter
     if (gradedFilter === 'graded') {
       filtered = filtered.filter(s => s.faculty_rating !== null);
     } else if (gradedFilter === 'ungraded') {
       filtered = filtered.filter(s => s.faculty_rating === null);
     }
-
 
     setFilteredSubmissions(filtered);
   };
@@ -307,7 +330,26 @@ const AdminSubmissions: React.FC<AdminSubmissionsProps> = () => {
 
         {/* Filters */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Subject/Assessment Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Subject/Assessment
+              </label>
+              <select
+                value={subjectFilter}
+                onChange={(e) => setSubjectFilter(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">All Subjects</option>
+                {getUniqueSubjects().map((subject) => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Search */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
@@ -315,7 +357,7 @@ const AdminSubmissions: React.FC<AdminSubmissionsProps> = () => {
                 <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by student, email, or assessment..."
+                  placeholder="Search by student, email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -326,7 +368,7 @@ const AdminSubmissions: React.FC<AdminSubmissionsProps> = () => {
 
             {/* Graded Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Filter</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
               <select
                 value={gradedFilter}
                 onChange={(e) => setGradedFilter(e.target.value as any)}
