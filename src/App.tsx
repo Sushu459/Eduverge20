@@ -37,6 +37,7 @@ import AdminCodingAnalytics from './pages/CodingPractice/AdminCodingAnalytics';
 import SubmissionView from './pages/CodingPractice/SubmissionView';
 import ResultsSummary from './components/ResultsSummary';
 import SessionLockGuard from './components/SessionLockGuard';
+import FacultyStudentManagement from './components/FacultyStudentManagement';
 import { ToastContainer } from 'react-toastify';
 
 const convertAuthUserToComponentUser = (authUser: AuthUser): any => ({
@@ -111,9 +112,9 @@ const App: React.FC = () => {
           path="/admin/users"
           element={
             user && user.role === 'admin' ? (
-              <DashboardLayout user={componentUser}>
+              //<DashboardLayout user={componentUser}>
                 <AdminUserManagement user={componentUser} />
-              </DashboardLayout>
+              //</DashboardLayout>
             ) : (
               <Navigate to="/login" />
             )
@@ -254,6 +255,20 @@ const App: React.FC = () => {
             )
           }
         />
+
+        <Route
+          path="/faculty/student"
+          element={
+            user && user.role === 'faculty' ? (
+              <DashboardLayout user={componentUser}>
+                <FacultyStudentManagement user={componentUser} />
+              </DashboardLayout>
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
 
         {/* STUDENT */}
         <Route
