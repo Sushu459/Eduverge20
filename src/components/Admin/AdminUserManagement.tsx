@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../utils/supabaseClient';
 import { createClient } from '@supabase/supabase-js'; // 🟢 Added import
 
-import NavigationSidebar from '../NavigationSidebar';
+//import NavigationSidebar from '../NavigationSidebar';
 import {
   Trash2,
   Lock,
@@ -33,7 +33,7 @@ interface AddUserForm {
   role: 'student' | 'faculty';
 }
 
-const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ user }) => {
+const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -407,7 +407,7 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ user }) => {
   if (loading) {
     return (
       <div className="flex">
-        <NavigationSidebar user={user} />
+        {/* <NavigationSidebar user={user} /> */}
         <div className="flex-1 flex items-center justify-center">
           <div className="text-lg text-gray-600">Loading...</div>
         </div>
@@ -433,7 +433,7 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ user }) => {
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <div className="hidden md:block">
-  <NavigationSidebar user={user} />
+  {/* <NavigationSidebar user={user} /> */}
 </div>
 
 
@@ -546,7 +546,70 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ user }) => {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto -mx-4 md:mx-0">
+
+            {/* ===== Mobile Card View ===== */}
+              <div className="md:hidden divide-y divide-gray-200">
+                {currentUsers.map((u) => (
+                  <div key={u.id} className="p-4 flex gap-4">
+                    
+                    {/* Avatar */}
+                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                      {u.full_name.charAt(0).toUpperCase()}
+                    </div>
+                
+                    {/* Content */}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold text-gray-900">{u.full_name}</p>
+                          <p className="text-sm text-gray-600 break-all">{u.email}</p>
+                        </div>
+                
+                        <button
+                          onClick={() => setSelectedUser(u)}
+                          className="text-sm text-blue-600 font-medium"
+                        >
+                          Manage
+                        </button>
+                      </div>
+                
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                        <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 capitalize">
+                          {u.role}
+                        </span>
+                
+                        <span
+                          className={`px-2 py-1 rounded-full ${
+                            u.is_active
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}
+                        >
+                          {u.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                        
+                        <span
+                          className={`px-2 py-1 rounded-full ${
+                            u.is_blocked
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-green-100 text-green-700'
+                          }`}
+                        >
+                          {u.is_blocked ? 'Blocked' : 'Allowed'}
+                        </span>
+                      </div>
+                        
+                      <p className="mt-2 text-xs text-gray-400">
+                        Joined: {new Date(u.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="hidden md:block overflow-x-auto">
+
+              
 
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">

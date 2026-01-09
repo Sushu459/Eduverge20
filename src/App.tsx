@@ -112,9 +112,9 @@ const App: React.FC = () => {
           path="/admin/users"
           element={
             user && user.role === 'admin' ? (
-              //<DashboardLayout user={componentUser}>
+              <DashboardLayout user={componentUser}>
                 <AdminUserManagement user={componentUser} />
-              //</DashboardLayout>
+              </DashboardLayout>
             ) : (
               <Navigate to="/login" />
             )

@@ -202,18 +202,31 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
 
       <div className="flex-1 p-8">
         {/* Header Section */}
-        <div className="flex justify-between items-start mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
           <div>
             <h2 className="text-3xl font-bold text-gray-800 mb-2">Student Management</h2>
             <p className="text-gray-600">View and manage enrolled students</p>
           </div>
           <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm"
-          >
-            <Plus className="w-5 h-5" />
-            Add New Student
-          </button>
+  onClick={() => setShowAddModal(true)}
+  className="
+    w-full sm:w-auto
+    flex items-center justify-center gap-2
+    px-5 py-2.5
+    bg-gradient-to-r from-blue-600 to-red-500
+    text-white font-semibold
+    rounded-lg
+    shadow-md
+    hover:from-blue-700 hover:to-red-600
+    hover:shadow-lg
+    transition-all duration-200
+    focus:outline-none focus:ring-2 focus:ring-blue-400
+  "
+>
+  <Plus className='w -5 h-5'/>
+  Add Student
+</button>
+
         </div>
 
         {successMessage && (
@@ -246,8 +259,49 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+             {/* ===== Desktop Table ===== */}
+             {/* ===== Mobile Card View ===== */}
+<div className="md:hidden divide-y divide-gray-200">
+  {currentStudents.map((student) => (
+    <div key={student.id} className="p-4 flex items-start gap-4">
+      
+      {/* Avatar */}
+      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+        {student.full_name.charAt(0).toUpperCase()}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1">
+        <p className="font-semibold text-gray-900">
+          {student.full_name}
+        </p>
+        <p className="text-sm text-gray-600 break-all">
+          {student.email}
+        </p>
+
+        <div className="mt-2 flex items-center gap-2 text-xs">
+          <span
+            className={`px-2 py-0.5 rounded-full font-medium ${
+              student.is_active
+                ? 'bg-green-100 text-green-700'
+                : 'bg-red-100 text-red-700'
+            }`}
+          >
+            {student.is_active ? 'Active' : 'Inactive'}
+          </span>
+
+          <span className="text-gray-400">
+            Joined: {new Date(student.created_at).toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
+
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
@@ -288,7 +342,9 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
                       </tr>
                     ))}
                   </tbody>
+                  
                 </table>
+                
               </div>
 
               {/* Pagination Footer */}

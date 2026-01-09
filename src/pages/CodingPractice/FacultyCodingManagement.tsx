@@ -382,8 +382,20 @@ const FacultyCodingManagement: React.FC<FacultyCodingManagementProps> = ({ user 
                 is_published: false,
               })
               setShowForm(true)
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+              }}
+              className="
+              w-full sm:w-auto
+              flex items-center justify-center gap-2
+              px-5 py-2.5
+              bg-gradient-to-r from-purple-700 to-emerald-400
+              text-white font-semibold
+              rounded-lg
+              shadow-md
+              hover:from-purple-800 hover:to-emerald-600
+              hover:shadow-lg
+              transition-all duration-200
+              focus:outline-none focus:ring-2 focus:ring-blue-400
+            "
           >
             <Plus className="w-5 h-5" />
             Create Problem
