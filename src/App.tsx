@@ -275,11 +275,11 @@ const App: React.FC = () => {
           path="/take-test/:assessmentId"
           element={
             user && user.role === 'student' ? (
-              <DashboardLayout user={componentUser}>
+              // <DashboardLayout user={componentUser}>
                 <SessionLockGuard>
                   <TestTaking user={componentUser} />
                 </SessionLockGuard>
-              </DashboardLayout>
+              // </DashboardLayout>
             ) : (
               <Navigate to="/login" />
             )
