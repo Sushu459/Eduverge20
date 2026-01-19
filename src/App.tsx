@@ -8,10 +8,9 @@ import {
 import { getCurrentUser } from './utils/auth';
 import type { AuthUser } from './utils/auth';
 
-
 import DashboardLayout from './layouts/DashboardLayout';
 
-// Pages / Components (same imports as you have)
+// Pages / Components
 import LoginPage from './pages/LoginPage';
 import CodingProblemPage from './pages/CodingPractice/CodingProblemPage';
 import FacultyDashboard from './components/FacultyDashboard';
@@ -39,6 +38,8 @@ import ResultsSummary from './components/ResultsSummary';
 import SessionLockGuard from './components/SessionLockGuard';
 import FacultyStudentManagement from './components/FacultyStudentManagement';
 import { ToastContainer } from 'react-toastify';
+import ResetPassword from './pages/ResetPassword';
+import AuthListener from './AuthListener';
 
 const convertAuthUserToComponentUser = (authUser: AuthUser): any => ({
   id: authUser.id,
@@ -81,21 +82,24 @@ const App: React.FC = () => {
   const componentUser = user ? convertAuthUserToComponentUser(user) : null;
 
   return (
-
     <Router
       future={{
         v7_startTransition: true,
         v7_relativeSplatPath: true,
       }}
     >
+      {/* 🔐 PASSWORD RESET LISTENER & TOASTS */}
+      <AuthListener />
+      
       <Routes>
-        {/* LOGIN (no layout) */}
+        {/* PUBLIC ROUTES */}
         <Route
           path="/login"
           element={!user ? <LoginPage onLogin={checkUser} /> : <Navigate to="/" />}
         />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* ADMIN routes (with layout) */}
+        {/* ADMIN ROUTES */}
         <Route
           path="/admin"
           element={
@@ -157,7 +161,7 @@ const App: React.FC = () => {
           }
         />
 
-        {/* CODING PRACTICE LAB (student / faculty) */}
+        {/* CODING PRACTICE (Student / Faculty) */}
         <Route
           path="/coding-lab"
           element={
@@ -171,18 +175,18 @@ const App: React.FC = () => {
           }
         />
         <Route
-  path="/coding-lab/:problemId"
-  element={
-    componentUser?.role === 'student' ? (
-      // <DashboardLayout user={componentUser}>
-        <CodingProblemPage user={componentUser} />
-      // </DashboardLayout>
-    ) : (
-      <Navigate to="/login" replace />
-    )
-  }
-/>
-
+          path="/coding-lab/:problemId"
+          element={
+            componentUser?.role === 'student' ? (
+              // Note: DashboardLayout is commented out intentionally based on your logic
+              // <DashboardLayout user={componentUser}>
+              <CodingProblemPage user={componentUser} />
+              // </DashboardLayout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
         <Route
           path="/coding-management"
           element={
@@ -208,7 +212,7 @@ const App: React.FC = () => {
           }
         />
 
-        {/* MAIN DASHBOARD (role-based) */}
+        {/* MAIN DASHBOARD (Role-Based Redirect) */}
         <Route
           path="/"
           element={
@@ -230,7 +234,7 @@ const App: React.FC = () => {
           }
         />
 
-        {/* FACULTY */}
+        {/* FACULTY SPECIFIC */}
         <Route
           path="/create-assessment"
           element={
@@ -255,7 +259,6 @@ const App: React.FC = () => {
             )
           }
         />
-
         <Route
           path="/faculty/student"
           element={
@@ -269,17 +272,14 @@ const App: React.FC = () => {
           }
         />
 
-
-        {/* STUDENT */}
+        {/* STUDENT SPECIFIC */}
         <Route
           path="/take-test/:assessmentId"
           element={
             user && user.role === 'student' ? (
-              // <DashboardLayout user={componentUser}>
-                <SessionLockGuard>
-                  <TestTaking user={componentUser} />
-                </SessionLockGuard>
-              // </DashboardLayout>
+              <SessionLockGuard>
+                <TestTaking user={componentUser} />
+              </SessionLockGuard>
             ) : (
               <Navigate to="/login" />
             )
@@ -322,7 +322,7 @@ const App: React.FC = () => {
           }
         />
 
-        {/* RESULTS */}
+        {/* RESULTS & COMMON */}
         <Route
           path="/results/:submissionId"
           element={
@@ -377,7 +377,8 @@ const App: React.FC = () => {
         {/* CATCH-ALL */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-          <ToastContainer position="bottom-right" autoClose={2000} />
+
+      <ToastContainer position="bottom-right" autoClose={2000} />
     </Router>
   );
 };

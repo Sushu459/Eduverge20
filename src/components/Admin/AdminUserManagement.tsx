@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../utils/supabaseClient';
-import { createClient } from '@supabase/supabase-js'; // 🟢 Added import
-
-//import NavigationSidebar from '../NavigationSidebar';
 import {
   Trash2,
   Lock,
@@ -43,7 +40,9 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'blocked'>('all');
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  //const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [addUserForm, setAddUserForm] = useState<AddUserForm>({
     email: '',
@@ -126,128 +125,43 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
   };
 
   // ============================================
-  // Add user to BOTH tables (FIXED)
+  // Add user to BOTH tables (OPTIMIZED with Admin)
   // ============================================
-  const addNewUser = async () => {
+const addNewUser = async () => {
     try {
       setAddUserError('');
       setActionLoading(true);
 
-      if (!addUserForm.email || !addUserForm.password || !addUserForm.full_name) {
-        setAddUserError('❌ All fields are required!');
-        setActionLoading(false);
-        return;
-      }
-
-      if (addUserForm.password.length < 6) {
-        setAddUserError('❌ Password must be at least 6 characters!');
-        setActionLoading(false);
-        return;
-      }
-
-      console.log('👤 Creating new user:', addUserForm.email);
-
-      // 🟢 FIX: Create a temporary client that DOES NOT persist session
-      const tempSupabase = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_ANON_KEY,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-            detectSessionInUrl: false
-          }
+      // Call your new Edge Function to create the user safely
+      const { data, error } = await supabase.functions.invoke('admin-user-manager', {
+        body: { 
+          action: 'create_user', 
+          payload: { 
+            email: addUserForm.email,
+            password: addUserForm.password,
+            full_name: addUserForm.full_name,
+            role: addUserForm.role
+          } 
         }
-      );
-
-      // STEP 1: Create user in auth.users using TEMP client
-      const { data: authData, error: authError } = await tempSupabase.auth.signUp({
-        email: addUserForm.email,
-        password: addUserForm.password
       });
 
-      if (authError) {
-        console.error('❌ Auth error:', authError);
-        setAddUserError(`❌ Error creating auth user: ${authError.message}`);
-        setActionLoading(false);
-        return;
-      }
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
 
-      if (!authData.user?.id) {
-        setAddUserError('❌ Failed to create user account');
-        setActionLoading(false);
-        return;
-      }
-
-      const userId = authData.user.id;
-      console.log('✓ Auth user created:', userId);
-
-      // STEP 2: Add to user_profiles table (Using GLOBAL supabase to allow Admin insert)
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
-          id: userId,
-          email: addUserForm.email,
-          full_name: addUserForm.full_name,
-          role: addUserForm.role,
-          is_active: true,
-          is_blocked: false
-        });
-
-      if (profileError) {
-        console.error('❌ Profile error:', profileError);
-        setAddUserError(`❌ Error creating profile: ${profileError.message}`);
-        setActionLoading(false);
-        return;
-      }
-
-      console.log('✓ Profile created');
-
-      // STEP 3: Add to users table (Using GLOBAL supabase)
-      const { error: usersError } = await supabase
-        .from('users')
-        .insert({
-          id: userId,
-          email: addUserForm.email,
-          full_name: addUserForm.full_name,
-          role: addUserForm.role,
-          is_active: true,
-          is_blocked: false,
-          created_at: new Date().toISOString()
-        });
-
-      if (usersError) {
-        console.error('❌ Users table error:', usersError);
-        setAddUserError(`❌ Error adding to users table: ${usersError.message}`);
-        setActionLoading(false);
-        return;
-      }
-
-      console.log('✓ Users table record created');
-
-      setSuccessMessage(
-        `✅ ${addUserForm.role === 'student' ? 'Student' : 'Faculty'} "${addUserForm.full_name}" created successfully!`
-      );
-      setTimeout(() => setSuccessMessage(''), 3000);
-
-      setAddUserForm({
-        email: '',
-        password: '',
-        full_name: '',
-        role: 'student'
-      });
+      setSuccessMessage('User created successfully!');
+      setAddUserForm({ email: '', password: '', full_name: '', role: 'student' });
       setShowAddUserModal(false);
-
-      // Refresh user list
+      
+      // Refresh the list to show the new user
       fetchUsers();
-    } catch (error) {
+
+    } catch (error: any) {
       console.error('❌ Error:', error);
-      setAddUserError(error instanceof Error ? error.message : 'Something went wrong');
+      setAddUserError(error.message || 'Failed to create user');
     } finally {
       setActionLoading(false);
     }
   };
-
   const toggleBlockUser = async (userId: string, currentStatus: boolean) => {
     try {
       setActionLoading(true);
@@ -367,39 +281,37 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
     }
   };
 
-  const deleteUser = async (userId: string) => {
-    if (!window.confirm('⚠️ Are you sure you want to delete this user? This action cannot be undone.')) return;
+ const deleteUser = async (userId: string) => {
+    if (!window.confirm('⚠️ Are you sure? This action is permanent.')) return;
 
     try {
       setActionLoading(true);
 
-      console.log('🗑️ Deleting user:', userId);
+      // Call your new Edge Function to delete everything safely
+      const { data, error } = await supabase.functions.invoke('admin-user-manager', {
+        body: { 
+          action: 'delete_user', 
+          payload: { userId } 
+        }
+      });
 
-      const { error: profileErr } = await supabase
-        .from('user_profiles')
-        .delete()
-        .eq('id', userId);
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
 
-      const { error: usersErr } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId);
-
-      if (profileErr || usersErr) {
-        console.error('❌ Error deleting user:', profileErr || usersErr);
-        alert(`Failed to delete: ${(profileErr || usersErr)?.message}`);
-        return;
-      }
-
-      console.log('✓ User deleted successfully from both tables');
       setSuccessMessage('User deleted successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-
+      // ✅ Auto-hide after 5 seconds
+setTimeout(() => {
+  setSuccessMessage(null);
+}, 5000);
+      
+      
+      // Update the list immediately
       setUsers(users.filter(u => u.id !== userId));
       setSelectedUser(null);
-    } catch (error) {
+
+    } catch (error: any) {
       console.error('❌ Error:', error);
-      alert(error instanceof Error ? error.message : 'Something went wrong');
+      alert(`Delete failed: ${error.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -432,15 +344,14 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
   const endDisplay = totalItems === 0 ? 0 : Math.min(indexOfLast, totalItems);
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
+    <div className="flex bg-gray-100 min-h-screen">
       <div className="hidden md:block">
-  {/* <NavigationSidebar user={user} /> */}
-</div>
-
+        {/* <NavigationSidebar user={user} /> */}
+      </div>
 
       <div className="flex-1 p-4 md:p-8">
 
-       <div className="mb-8 flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
 
           <div>
             <h2 className="text-3xl font-bold text-gray-800 mb-2">User Management</h2>
@@ -609,9 +520,6 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
               </div>
               
               <div className="hidden md:block overflow-x-auto">
-
-              
-
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>

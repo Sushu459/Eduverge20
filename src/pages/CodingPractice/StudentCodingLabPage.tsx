@@ -89,7 +89,7 @@ const StudentCodingLabPage: React.FC<StudentCodingLabPageProps> = ({ user }) => 
 
   /* ================= RENDER ================= */
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
 
         {/* ===== Header with Image ===== */}

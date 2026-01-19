@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
-import { createClient } from '@supabase/supabase-js'; 
-//import NavigationSidebar from './NavigationSidebar';
+
+
 import { 
   Users, 
   Plus, 
@@ -94,6 +94,7 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
     }
   };
 
+  // 🟢 SECURE IMPLEMENTATION
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
@@ -107,58 +108,22 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
         throw new Error('Password must be at least 6 characters');
       }
 
-      // 🟢 Temporary client to prevent session overwrite
-      const tempSupabase = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_ANON_KEY,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-            detectSessionInUrl: false
+      // 🚀 CALL EDGE FUNCTION (Secure Backend)
+      // We reuse the same function you deployed for the Admin panel.
+      const { data, error } = await supabase.functions.invoke('admin-user-manager', {
+        body: {
+          action: 'create_user',
+          payload: {
+            email: addForm.email,
+            password: addForm.password,
+            full_name: addForm.full_name,
+            role: 'student' // 👈 Explicitly setting role to student
           }
         }
-      );
-
-      // 1. Create Auth User
-      const { data: authData, error: authError } = await tempSupabase.auth.signUp({
-        email: addForm.email,
-        password: addForm.password,
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user account');
-
-      const userId = authData.user.id;
-
-      // 2. Insert into user_profiles
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
-          id: userId,
-          email: addForm.email,
-          full_name: addForm.full_name,
-          role: 'student',
-          is_active: true,
-          is_blocked: false
-        });
-
-      if (profileError) throw profileError;
-
-      // 3. Insert into users table
-      const { error: usersError } = await supabase
-        .from('users')
-        .insert({
-          id: userId,
-          email: addForm.email,
-          full_name: addForm.full_name,
-          role: 'student',
-          is_active: true,
-          is_blocked: false,
-          created_at: new Date().toISOString()
-        });
-
-      if (usersError) throw usersError;
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
 
       setSuccessMessage(`✅ Student "${addForm.full_name}" added successfully!`);
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -188,7 +153,6 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
   if (loading) {
     return (
       <div className="flex h-screen bg-gray-50">
-        {/* <NavigationSidebar user={user} /> */}
         <div className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
@@ -197,9 +161,7 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
   }
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
-      {/* <NavigationSidebar user={user} /> */}
-
+    <div className="flex bg-gray-100 min-h-screen">
       <div className="flex-1 p-8">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
@@ -208,25 +170,24 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
             <p className="text-gray-600">View and manage enrolled students</p>
           </div>
           <button
-  onClick={() => setShowAddModal(true)}
-  className="
-    w-full sm:w-auto
-    flex items-center justify-center gap-2
-    px-5 py-2.5
-    bg-gradient-to-r from-blue-600 to-red-500
-    text-white font-semibold
-    rounded-lg
-    shadow-md
-    hover:from-blue-700 hover:to-red-600
-    hover:shadow-lg
-    transition-all duration-200
-    focus:outline-none focus:ring-2 focus:ring-blue-400
-  "
->
-  <Plus className='w -5 h-5'/>
-  Add Student
-</button>
-
+            onClick={() => setShowAddModal(true)}
+            className="
+              w-full sm:w-auto
+              flex items-center justify-center gap-2
+              px-5 py-2.5
+              bg-gradient-to-r from-blue-600 to-red-500
+              text-white font-semibold
+              rounded-lg
+              shadow-md
+              hover:from-blue-700 hover:to-red-600
+              hover:shadow-lg
+              transition-all duration-200
+              focus:outline-none focus:ring-2 focus:ring-blue-400
+            "
+          >
+            <Plus className='w-5 h-5'/>
+            Add Student
+          </button>
         </div>
 
         {successMessage && (
@@ -259,49 +220,47 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
             </div>
           ) : (
             <>
-             {/* ===== Desktop Table ===== */}
-             {/* ===== Mobile Card View ===== */}
-<div className="md:hidden divide-y divide-gray-200">
-  {currentStudents.map((student) => (
-    <div key={student.id} className="p-4 flex items-start gap-4">
-      
-      {/* Avatar */}
-      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-        {student.full_name.charAt(0).toUpperCase()}
-      </div>
+            {/* ===== Mobile Card View ===== */}
+            <div className="md:hidden divide-y divide-gray-200">
+              {currentStudents.map((student) => (
+                <div key={student.id} className="p-4 flex items-start gap-4">
+                  {/* Avatar */}
+                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                    {student.full_name.charAt(0).toUpperCase()}
+                  </div>
 
-      {/* Info */}
-      <div className="flex-1">
-        <p className="font-semibold text-gray-900">
-          {student.full_name}
-        </p>
-        <p className="text-sm text-gray-600 break-all">
-          {student.email}
-        </p>
+                  {/* Info */}
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900">
+                      {student.full_name}
+                    </p>
+                    <p className="text-sm text-gray-600 break-all">
+                      {student.email}
+                    </p>
 
-        <div className="mt-2 flex items-center gap-2 text-xs">
-          <span
-            className={`px-2 py-0.5 rounded-full font-medium ${
-              student.is_active
-                ? 'bg-green-100 text-green-700'
-                : 'bg-red-100 text-red-700'
-            }`}
-          >
-            {student.is_active ? 'Active' : 'Inactive'}
-          </span>
+                    <div className="mt-2 flex items-center gap-2 text-xs">
+                      <span
+                        className={`px-2 py-0.5 rounded-full font-medium ${
+                          student.is_active
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}
+                      >
+                        {student.is_active ? 'Active' : 'Inactive'}
+                      </span>
 
-          <span className="text-gray-400">
-            Joined: {new Date(student.created_at).toLocaleDateString()}
-          </span>
-        </div>
-      </div>
-    </div>
-  ))}
-</div>
+                      <span className="text-gray-400">
+                        Joined: {new Date(student.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
 
+              {/* ===== Desktop Table ===== */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
-
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
@@ -311,7 +270,6 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {/* 🟢 Using currentStudents instead of filteredStudents for pagination */}
                     {currentStudents.map((student) => (
                       <tr key={student.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -342,15 +300,12 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
                       </tr>
                     ))}
                   </tbody>
-                  
                 </table>
-                
               </div>
 
               {/* Pagination Footer */}
               <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
                 
-                {/* Rows per page selector & Info */}
                 <div className="flex items-center gap-4 text-sm text-gray-600">
                   <div className="flex items-center gap-2">
                     <span>Rows per page:</span>
@@ -373,21 +328,16 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
                   </span>
                 </div>
 
-                {/* Navigation Buttons */}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
                     className="p-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    aria-label="Previous Page"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   
-                  {/* Simple Page Numbers */}
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    // Logic to show a sliding window of pages could go here, 
-                    // but simple logic for < 5 pages or showing current page window:
                     let p = i + 1;
                     if (totalPages > 5 && currentPage > 3) {
                        p = currentPage - 2 + i;
@@ -413,7 +363,6 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     className="p-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    aria-label="Next Page"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -441,8 +390,8 @@ const FacultyStudentManagement: React.FC<FacultyStudentManagementProps> = () => 
             <form onSubmit={handleAddStudent} className="p-6 space-y-4">
               {formError && (
                 <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg flex items-start gap-2">
-                   <span>⚠️</span>
-                   <span>{formError}</span>
+                    <span>⚠️</span>
+                    <span>{formError}</span>
                 </div>
               )}
 

@@ -3,6 +3,9 @@ import { signIn, signUp } from '../utils/auth';
 import '../index.css';
 import EduvergeLogo from '../assets/smartVerg.jpeg';
 import OnlyLogo from '../assets/onlylogo.jpeg';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
+import { Eye, EyeOff } from 'lucide-react';
+
 
 interface LoginPageProps {
   onLogin: () => void;
@@ -16,6 +19,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [role, setRole] = useState<'faculty' | 'student'>('student');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
 
   // ✅ Demo Accounts
   const demoAccounts = [
@@ -83,7 +89,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             <div className="bg-primary-100 p-3 rectangle-full mb-4 shadow-sm">
               <img src={EduvergeLogo} alt="EduVerge logo" className="w-16 h-16 object-contain" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-800">EduVerge</h1>
+            {/* <h1 className="text-3xl font-bold text-gray-800">EduVerge</h1> */}
+            <h1 className="text-3xl font-bold bg-gradient-to-r bold from-indigo-800 to-green-500 bg-clip-text text-transparent">
+    EduVerge</h1>
             <p className="text-gray-600 mt-2">Smart Learning & Assessment</p>
           </div>
 
@@ -114,7 +122,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               />
             </div>
 
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 type="password"
@@ -123,8 +131,54 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 className="w-full px-4 py-2 border rounded-lg"
                 required
                 minLength={6}
+                
               />
+            </div> */}
+
+            <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
+
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg pr-10"
+                required
+                minLength={6}
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
+          </div>
+
+            {!isSignUp && (
+  <>
+    <div className="text-right">
+      <button
+        type="button"
+        onClick={() => setShowForgot(true)}
+        className="text-sm text-blue-600 hover:underline"
+      >
+        Forgot password?
+      </button>
+    </div>
+
+    {showForgot && (
+      <ForgotPasswordModal onClose={() => setShowForgot(false)} />
+    )}
+  </>
+)}
+
+
 
             {isSignUp && (
               <div>
@@ -146,29 +200,57 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary-600 hover:bg-primary-700 text-blue-500 font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" >
-              {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
-            </button>
+            <div className="flex justify-center">
+  <button
+    type="submit"
+    disabled={loading}
+    className={`w-full font-medium text-base py-1 px-2 rounded-lg transition-all duration-200
+      disabled:opacity-50 disabled:cursor-not-allowed
+      ${
+        isSignUp
+          ? "bg-blue-500 text-white hover:bg-blue-600"
+          : "bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg"
+      }`}
+  >
+    {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
+  </button>
+  
+</div>
+
+
+
           </form>
 
           {/* Switch */}
-          <div className="mt-5 text-center">
-            <button
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setError('');
-                setName('');
-              }}
-              className="text-primary-600 text-sm font-medium"
-            >
-              {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-            </button>
-          </div>
+         <div className="mt-5 text-center">
+  <button
+    onClick={() => {
+      setIsSignUp(!isSignUp);
+      setError('');
+      setName('');
+    }}
+    className="text-sm font-medium text-gray-600"
+  >
+    {isSignUp ? (
+      <>
+        Already have an account?{" "}
+        <span className="text-blue-600 hover:text-blue-700">
+          Sign In
+        </span>
+      </>
+    ) : (
+      <>
+        Don't have an account?{" "}
+        <span className="text-blue-600 hover:text-blue-700">
+          Sign Up
+        </span>
+      </>
+    )}
+  </button>
+</div>
 
-          {/* ✅ Demo Credentials */}
+
+           {/* ✅ Demo Credentials */}
           <div className="mt-8 border-t pt-5">
             <p className="text-sm text-gray-600 mb-3 text-center font-medium">
               Demo Accounts

@@ -267,7 +267,7 @@ const AdminCodingAnalytics: React.FC<AdminCodingAnalyticsProps> = () => {
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="w-full min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <BarChart3 className="w-12 h-12 text-blue-500 mx-auto mb-4 animate-spin" />
           <div className="text-lg text-gray-600">Loading analytics...</div>

@@ -25,9 +25,9 @@ const AssignmentScoreCalc: React.FC = () => {
   };
 
   const updateAssignment = (id: number, field: 'score' | 'maxScore', value: string) => {
-    setAssignments(
-      assignments.map(a => (a.id === id ? { ...a, [field]: value } : a))
-    );
+    setAssignments(assignments.map(a =>
+      a.id === id ? { ...a, [field]: value } : a
+    ));
   };
 
   const calculate = () => {
@@ -39,11 +39,14 @@ const AssignmentScoreCalc: React.FC = () => {
 
     const totalScore = valid.reduce((sum, a) => sum + parseFloat(a.score), 0);
     const totalMaxScore = valid.reduce((sum, a) => sum + parseFloat(a.maxScore), 0);
-    
+
     const average = totalScore / valid.length;
     const percentage = (totalScore / totalMaxScore) * 100;
 
-    setResult({ average: parseFloat(average.toFixed(2)), percentage: parseFloat(percentage.toFixed(2)) });
+    setResult({
+      average: parseFloat(average.toFixed(2)),
+      percentage: parseFloat(percentage.toFixed(2))
+    });
   };
 
   const reset = () => {
@@ -53,58 +56,76 @@ const AssignmentScoreCalc: React.FC = () => {
 
   return (
     <CalculatorCard title="Assignment Score Calculator">
-      <div className="space-y-3 mb-4">
+      <div className="space-y-4 mb-4">
         {assignments.map((assignment, index) => (
-          <div key={assignment.id} className="flex gap-3 items-center">
-            <span className="text-gray-600 w-24">Assignment {index + 1}</span>
+          <div
+            key={assignment.id}
+            className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center"
+          >
+            <span className="text-gray-600 text-sm sm:w-24">
+              Assignment {index + 1}
+            </span>
+
             <input
               type="number"
               placeholder="Score"
               value={assignment.score}
               onChange={(e) => updateAssignment(assignment.id, 'score', e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-28 border border-gray-300 rounded px-3 py-2
+                         focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <span className="text-gray-500">out of</span>
+
+            <span className="text-gray-500 hidden sm:inline">out of</span>
+
             <input
               type="number"
-              placeholder="Max"
+              placeholder="Max Score"
               value={assignment.maxScore}
               onChange={(e) => updateAssignment(assignment.id, 'maxScore', e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-28 border border-gray-300 rounded px-3 py-2
+                         focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+
             {assignments.length > 1 && (
               <button
                 onClick={() => removeAssignment(assignment.id)}
-                className="text-red-500 hover:text-red-700 font-medium"
+                className="text-red-500 hover:text-red-700 font-medium self-start sm:self-center"
               >
-                ✕
+                ✕ Remove
               </button>
             )}
           </div>
         ))}
       </div>
 
-      <div className="flex gap-3 mb-6">
+      {/* Buttons */}
+      <div className="flex flex-wrap gap-3 mb-6">
         <button
           onClick={addAssignment}
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
+          className="flex-1 sm:flex-none px-4 py-2 bg-gray-200 text-gray-700 rounded
+                     hover:bg-gray-300 transition"
         >
           + Add Assignment
         </button>
+
         <button
           onClick={calculate}
-          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 text-white rounded
+                     hover:bg-blue-700 transition"
         >
           Calculate
         </button>
+
         <button
           onClick={reset}
-          className="px-4 py-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition"
+          className="flex-1 sm:flex-none px-4 py-2 bg-gray-100 text-gray-600 rounded
+                     hover:bg-gray-200 transition"
         >
           Reset
         </button>
       </div>
 
+      {/* Result */}
       {result && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="font-semibold text-blue-900 mb-2">Results</h3>

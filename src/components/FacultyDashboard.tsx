@@ -2,13 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import type { User, Assessment, Submission } from '../utils/supabaseClient';
 //import NavigationSidebar from './NavigationSidebar';
-import { FileText, Users, TrendingUp, Code2, Trash2, AlertCircle } from 'lucide-react';
+import { 
+  FileText, 
+  Users, 
+  TrendingUp, 
+  Code2, 
+  Trash2, 
+  AlertCircle, 
+  ArrowRight,
+  PlusCircle // Added for the create button icon
+} from 'lucide-react';
 import AssessmentSubmissions from './AssessmentSubmissions';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import LoadingSpinner from '../layouts/LoadingSpinner';
-import imgcard from '../assets/codingFacultyImg.jpeg'
+import imgcard from '../assets/codingFacultyImg.jpeg';
+import assmentcrd from '../assets/assmentcrd.jpg'
 
 interface FacultyDashboardProps {
   user: User;
@@ -171,73 +181,119 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
   }
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
+    <div className="flex bg-gray-100 min-h-screen">
       {/* <NavigationSidebar user={user} /> */}
 
       <div className="flex-1 p-8">
         <div className="mb-8">
-        <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-emerald-600 to-pink-600 bg-clip-text text-transparent">
-  Faculty Dashboard
-</h2>
-
+          <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-emerald-600 to-pink-600 bg-clip-text text-transparent">
+            Faculty Dashboard
+          </h2>
           <p className="text-gray-600">Manage your assessments and view student performance</p>
         </div>
 
-        {/* ===== NEW: Coding Management Quick Access Card ===== */}
-       <div
-  className="mb-4 relative rounded-2xl overflow-hidden shadow-lg"
-  style={{
-    backgroundImage: `url(${imgcard})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-  }}
->
-  {/* Overlay */}
-  <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/85 via-emerald-800/65 to-teal-700/40" />
+        {/* ===== QUICK ACCESS CARDS ===== */}
+        {/* ===== QUICK ACCESS CARDS (Fixed: Rounded Corners on Hover) ===== */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8 items-stretch">
+          
+          {/* CARD 1: Coding Management */}
+          <div 
+            className="group relative overflow-hidden rounded-2xl border border-emerald-800/10 shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1 h-full transform-gpu"
+            style={{ WebkitMaskImage: 'radial-gradient(white, black)' }} // Forces Safari/Chrome to respect rounded corners during animation
+          >
+            {/* Background Image */}
+            <div className="absolute inset-0">
+              <img 
+                src={imgcard} 
+                alt="Coding Problem Background" 
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" 
+              />
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/90 via-emerald-900/70 to-emerald-800/40" />
+            </div>
 
-  {/* Content */}
-  <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 p-4 text-white">
+            {/* Content Container */}
+            <div className="relative z-10 flex flex-col p-4 h-full">
+              
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center justify-center w-10 h-10 bg-white/10 rounded-lg backdrop-blur-md border border-white/10 text-emerald-300 shrink-0">
+                  <Code2 className="w-5 h-5" />
+                </div>
+                <h3 className="text-xl font-bold text-white tracking-tight">
+                  Problem Management
+                </h3>
+              </div>
 
+              {/* Description */}
+              <p className="text-emerald-100/90 mb-6 leading-relaxed text-sm flex-grow line-clamp-3">
+                Create, manage, and evaluate coding problems with difficulty levels and test cases.
+              </p>
 
-    {/* LEFT CONTENT */}
-      <div className="flex flex-col justify-center md:col-span-2">
+              {/* Action Button */}
+              <div className="mt-auto">
+                <button
+                  onClick={() => navigate('/coding-management')}
+                  className="group/btn inline-flex items-center gap-2 bg-emerald-100 text-emerald-900 px-5 py-2.5 rounded-xl font-semibold 
+                             hover:bg-emerald-50 active:scale-95 transition-all shadow-sm text-sm"
+                >
+                  Manage Problems
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
+                </button>
+              </div>
+            </div>
+          </div>
 
-      <div className="flex items-center gap-2 mb-3">
-        <div className="p-2 bg-white/20 rounded-lg backdrop-blur">
-          <Code2 className="w-6 h-6" />
+          {/* CARD 2: Create Assessment */}
+          <div 
+            className="group relative overflow-hidden rounded-2xl border border-blue-800/10 shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1 h-full transform-gpu"
+            style={{ WebkitMaskImage: 'radial-gradient(white, black)' }} // Forces Safari/Chrome to respect rounded corners during animation
+          >
+            
+            {/* Background Image */}
+            <div className="absolute inset-0">
+              <img 
+                src={assmentcrd} 
+                alt="Assessment Background" 
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" 
+              />
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-950/85 via-blue-900/60 to-blue-800/40" />
+            </div>
+
+            {/* Content Container */}
+            <div className="relative z-10 flex flex-col p-4 h-full">
+              
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center justify-center w-10 h-10 bg-white/10 rounded-lg backdrop-blur-md border border-white/10 text-blue-300 shrink-0">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <h3 className="text-xl font-bold text-white tracking-tight">
+                  Create Assessment
+                </h3>
+              </div>
+
+              {/* Description */}
+              <p className="text-blue-100/90 mb-6 leading-relaxed text-sm flex-grow line-clamp-3">
+                Design academic assessments with defined time limits, units, and structured questions.
+              </p>
+
+              {/* Action Button */}
+              <div className="mt-auto">
+                <button
+                  onClick={() => navigate('/create-assessment')}
+                  className="group/btn inline-flex items-center gap-2 bg-blue-100 text-blue-900 px-5 py-2.5 rounded-xl font-semibold 
+                             hover:bg-blue-50 active:scale-95 transition-all shadow-sm text-sm"
+                >
+                  Create New
+                  <PlusCircle className="w-4 h-4 transition-transform group-hover/btn:rotate-90" />
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
-        <h3 className="text-2xl font-bold">
-          Coding Problem Management
-        </h3>
-      </div>
-
-      <p className="text-emerald-100 mb-3">
-
-        Create, manage, and evaluate coding problems with difficulty levels, test cases, and submission tracking.
-      </p>
-
-      <div>
-        <button
-          onClick={() => navigate('/coding-management')}
-          className="bg-white text-emerald-700 px-6 py-2.5 rounded-lg font-semibold
-                     hover:bg-emerald-50 transition"
-        >
-          Manage Problems
-        </button>
-      </div>
-    </div>
-
-    {/* RIGHT VISUAL */}
-    {/* RIGHT VISUAL */}
-<div className="hidden md:flex items-center justify-end md:col-span-1">
-
-      <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
-        <Code2 className="w-10 h-10 text-white" />
-      </div>
-    </div>
-
-  </div>
-</div>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -295,119 +351,115 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ user }) => {
             </div>
           ) : (
             <>
-  {/* ================= DESKTOP TABLE ================= */}
-  <div className="hidden md:block overflow-x-auto">
-    <table className="w-full">
-      <thead className="bg-gray-50">
-        <tr>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submissions</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-200">
-        {assessments.map((assessment) => (
-          <tr key={assessment.id} className="hover:bg-gray-50">
-            <td className="px-6 py-4 text-sm font-medium text-gray-800">{assessment.title}</td>
-            <td className="px-6 py-4 text-sm text-gray-600">{assessment.subject}</td>
-            <td className="px-6 py-4 text-sm text-gray-600">{assessment.unit}</td>
-            <td className="px-6 py-4 text-sm text-gray-600">{assessment.duration_minutes} mins</td>
-            <td className="px-6 py-4 text-sm text-gray-600">{getSubmissionCount(assessment.id)}</td>
-            <td className="px-6 py-4 text-sm text-gray-600">
-              {new Date(assessment.created_at).toLocaleDateString()}
-            </td>
-            <td className="px-6 py-4 text-sm flex gap-2">
-              <button
-                onClick={() => {
-                  setSelectedAssessmentId(assessment.id);
-                  setShowSubmissions(true);
-                }}
-                className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium rounded-lg"
-              >
-                View Submissions
-              </button>
-              <button
-                onClick={() => openDeleteModal(assessment.id, assessment.title)}
-                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
+              {/* ================= DESKTOP TABLE ================= */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submissions</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {assessments.map((assessment) => (
+                      <tr key={assessment.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-800">{assessment.title}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{assessment.subject}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{assessment.unit}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{assessment.duration_minutes} mins</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{getSubmissionCount(assessment.id)}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {new Date(assessment.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm flex gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedAssessmentId(assessment.id);
+                              setShowSubmissions(true);
+                            }}
+                            className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium rounded-lg"
+                          >
+                            View Submissions
+                          </button>
+                          <button
+                            onClick={() => openDeleteModal(assessment.id, assessment.title)}
+                            className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-  {/* ================= MOBILE CARDS ================= */}
-  <div className="md:hidden space-y-4 p-4">
-    {assessments.map((assessment) => (
-      <div
-        key={assessment.id}
-        className="bg-white border rounded-xl p-4 shadow-sm space-y-3"
-      >
-        {/* Header */}
-        <div>
-          <p className="font-semibold text-gray-800 text-base">
-            {assessment.title}
-          </p>
-          <p className="text-sm text-gray-500">
-            {assessment.subject} • Unit {assessment.unit}
-          </p>
-        </div>
+              {/* ================= MOBILE CARDS ================= */}
+              <div className="md:hidden space-y-4 p-4">
+                {assessments.map((assessment) => (
+                  <div
+                    key={assessment.id}
+                    className="bg-white border rounded-xl p-4 shadow-sm space-y-3"
+                  >
+                    {/* Header */}
+                    <div>
+                      <p className="font-semibold text-gray-800 text-base">
+                        {assessment.title}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {assessment.subject} • Unit {assessment.unit}
+                      </p>
+                    </div>
 
-        {/* Info */}
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-gray-500">Duration</p>
-            <p className="font-medium">{assessment.duration_minutes} mins</p>
-          </div>
-          <div>
-           <div className="flex flex-col items-center gap-1">
-  <p className="text-gray-500 text-sm">Submissions</p>
-  <p className="flex items-center justify-center w-10 h-10 rectangle-full bg-gray-50 text-blue-600 font-semibold text-sm">
-    {getSubmissionCount(assessment.id)}
-  </p>
-</div>
+                    {/* Info */}
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-gray-500">Duration</p>
+                        <p className="font-medium">{assessment.duration_minutes} mins</p>
+                      </div>
+                      <div>
+                        <div className="flex flex-col items-center gap-1">
+                          <p className="text-gray-500 text-sm">Submissions</p>
+                          <p className="flex items-center justify-center w-10 h-10 rectangle-full bg-gray-50 text-blue-600 font-semibold text-sm">
+                            {getSubmissionCount(assessment.id)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-2">
+                      <p className="text-xs text-gray-500">
+                        {new Date(assessment.created_at).toLocaleDateString()}
+                      </p>
 
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-2">
-          <p className="text-xs text-gray-500">
-            {new Date(assessment.created_at).toLocaleDateString()}
-          </p>
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                setSelectedAssessmentId(assessment.id);
-                setShowSubmissions(true);
-              }}
-             className="px-3 py-1 rounded-md bg-blue-50 text-blue-600 font-medium text-sm hover:bg-blue-100 transition"
-
-            >
-              View
-            </button>
-            <button
-                onClick={() => openDeleteModal(assessment.id, assessment.title)}
-                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-          </div>
-        </div>
-      </div>
-    ))}
-  </div>
-</>
-
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => {
+                            setSelectedAssessmentId(assessment.id);
+                            setShowSubmissions(true);
+                          }}
+                          className="px-3 py-1 rounded-md bg-blue-50 text-blue-600 font-medium text-sm hover:bg-blue-100 transition"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => openDeleteModal(assessment.id, assessment.title)}
+                          className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
 

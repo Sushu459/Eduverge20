@@ -4,6 +4,7 @@ import { supabase } from '../utils/supabaseClient';
 import type { User } from '../utils/supabaseClient';
 //import NavigationSidebar from './NavigationSidebar';
 import { CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import PremiumLoader from '../layouts/PremiumLoader';
 
 interface TestResultsProps {
   user: User;
@@ -113,7 +114,7 @@ const TestResults: React.FC<TestResultsProps> = () => {
       <div className="flex">
         {/* <NavigationSidebar user={user} /> */}
         <div className="flex-1 flex items-center justify-center bg-gray-50">
-          <div className="text-lg text-gray-600">Loading results...</div>
+          <PremiumLoader message="Loading result..." />
         </div>
       </div>
     );
@@ -153,7 +154,7 @@ const TestResults: React.FC<TestResultsProps> = () => {
   };
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
+    <div className="flex bg-gray-100 min-h-screen">
       {/* <NavigationSidebar user={user} /> */}
 
       <div className="flex-1 p-8 overflow-y-auto">

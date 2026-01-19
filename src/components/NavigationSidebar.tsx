@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import logo from '../assets/onlylogo.jpeg';
+import Navbarlogo from '../assets/NavbarIMG.jpg';
 import {
   BookOpen,
   LogOut,
@@ -80,8 +81,9 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
         aria-label={isOpen ? 'Close menu' : 'Open menu'}
         aria-expanded={isOpen}
         className="md:hidden fixed top-4 left-4 z-50 p-2
-        bg-gradient-to-r 
-        text-gray-600 rounded-xl shadow-md
+        bg-gradient-to-r
+        text-cyan-900
+         rounded-xl shadow-md
         hover:from-purple-200 hover:to-orange-100
         transition-all duration-300"
       >
@@ -99,6 +101,19 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
         md:translate-x-0
         flex flex-col overflow-hidden`}   // <- key layout change
       >
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `url(${Navbarlogo})`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            backgroundSize: '480px',
+            opacity: 0.19,
+          }}
+        />
+
+        <div className="relative z-10 flex flex-col h-full">
+
         {/* Header (fixed) */}
         <div className="flex-shrink-0 p-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex items-center gap-2 mb-3">
@@ -167,15 +182,16 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
                 icon={<PlusCircle className="w-5 h-5" />}
                 label="Create Assessment"
               />
-              <NavItem
-                to="/course-materials"
-                icon={<FileText className="w-5 h-5" />}
-                label="Course Materials"
-              />
+             
               <NavItem
                 to="/coding-management"
                 icon={<Code2 className="w-5 h-5" />}
                 label="Coding Problems"
+              />
+               <NavItem
+                to="/course-materials"
+                icon={<FileText className="w-5 h-5" />}
+                label="Course Materials"
               />
               <NavItem
               to="/faculty/student"
@@ -187,26 +203,31 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
 
           {user.role === 'student' && (
             <>
-              <NavItem
-                to="/courses"
-                icon={<BookOpen className="w-5 h-5" />}
-                label="Course Materials"
-              />
+              
               <NavItem
                 to="/coding-lab"
                 icon={<Code2 className="w-5 h-5" />}
                 label="Coding Lab"
               />
+
               <NavItem
-                to="/score-calculator"
-                icon={<Calculator className="w-5 h-5" />}
-                label="Score Calculator"
+                to="/courses"
+                icon={<BookOpen className="w-5 h-5" />}
+                label="Course Materials"
               />
+              
               <NavItem
                 to="/ai-assistant"
                 icon={<Sparkles className="w-5 h-5" />}
                 label="AI Assistant"
               />
+
+              <NavItem
+                to="/score-calculator"
+                icon={<Calculator className="w-5 h-5" />}
+                label="Score Calculator"
+              />
+
             </>
           )}
 
@@ -239,6 +260,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ user }) => {
             <LogOut className="w-5 h-5" />
             Sign Out
           </button>
+        </div>
         </div>
       </aside>
 
