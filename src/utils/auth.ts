@@ -1,4 +1,3 @@
-
 import { supabase } from './supabaseClient';
 
 export interface AuthUser {
@@ -12,7 +11,7 @@ export interface AuthUser {
 }
 
 // =====================================================
-// SIGN UP
+// SIGN UP (Updated)
 // =====================================================
 export const signUp = async (
   email: string,
@@ -20,10 +19,17 @@ export const signUp = async (
   full_name: string,
   role: 'faculty' | 'student' = 'student'
 ) => {
+  // 1. Check if user already exists in your database
+  // This gives a much faster and clearer error message
+  const exists = await emailExists(email);
+  if (exists) {
+    throw new Error('User already registered. Please sign in.');
+  }
+
   try {
     console.log('📝 Starting signup for:', email);
 
-    // Step 1: Create auth user
+    // Step 2: Create auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -34,7 +40,11 @@ export const signUp = async (
 
     if (authError) {
       console.error('❌ Auth signup error:', authError);
-      throw new Error(`Auth signup failed: ${authError.message}`);
+      // Supabase specific check
+      if (authError.message.includes('already registered')) {
+        throw new Error('User already registered. Please sign in.');
+      }
+      throw new Error(authError.message);
     }
 
     if (!authData.user) {
@@ -44,7 +54,7 @@ export const signUp = async (
     const userId = authData.user.id;
     console.log('✓ Auth user created:', userId);
 
-    // Step 2: Insert into users table
+    // Step 3: Insert into users table
     const { error: usersError } = await supabase
       .from('users')
       .insert({
@@ -56,11 +66,15 @@ export const signUp = async (
 
     if (usersError) {
       console.error('❌ Users table error:', usersError);
+      // If the error is a duplicate key constraint, user exists
+      if (usersError.code === '23505') { 
+         throw new Error('User already registered.');
+      }
       throw new Error(`Users insert failed: ${usersError.message}`);
     }
     console.log('✓ User record created');
 
-    // Step 3: Insert into user_profiles
+    // Step 4: Insert into user_profiles
     const { error: profileError } = await supabase
       .from('user_profiles')
       .insert({
@@ -86,10 +100,8 @@ export const signUp = async (
 
   } catch (error) {
     console.error('❌ Signup failed:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown signup error'
-    };
+    // 👇 CRITICAL CHANGE: Throw the error so the UI handles it as a failure
+    throw error; 
   }
 };
 
@@ -444,37 +456,6 @@ export const updatePassword = async (newPassword: string) => {
     };
   }
 };
-
-
-//import { supabase } from './supabaseClient';
-
-/* Existing signIn & signUp remain unchanged */
-
-/* 🔍 Check if user exists */
-export const checkUserExistsByEmail = async (email: string) => {
-  const { data, error } = await supabase
-    .from('users') // 👈 change if your table name is different
-    .select('id')
-    .eq('email', email)
-    .single();
-
-  if (error && error.code !== 'PGRST116') {
-    throw error;
-  }
-
-  return !!data; // true if user exists
-};
-
-/* 📩 Send reset email */
-export const sendPasswordResetEmail = async (email: string) => {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`,
-  });
-
-  if (error) throw error;
-};
-
-
 
 // =====================================================
 // ADMIN: BLOCK/UNBLOCK USER

@@ -6,9 +6,85 @@ import {
   Unlock,
   Search,
   Plus,
-  X
+  X,
+  AlertTriangle, // Added for modal
+  AlertCircle    // Added for modal
 } from 'lucide-react';
 import PremiumLoader from '../../layouts/PremiumLoader';
+
+// ==========================================
+// 1. CUSTOM DELETE CONFIRMATION MODAL
+// ==========================================
+interface DeleteModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  itemName?: string;
+  isDeleting: boolean;
+}
+
+const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({ 
+  isOpen, onClose, onConfirm, title, message, itemName, isDeleting 
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+        
+        {/* Icon Header */}
+        <div className="flex flex-col items-center pt-8 pb-4">
+          <div className="bg-red-50 p-3 rounded-full mb-3">
+             <AlertTriangle className="w-8 h-8 text-red-500" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+        </div>
+
+        {/* Content */}
+        <div className="px-8 pb-6 text-center">
+          <p className="text-gray-500 mb-2">
+            {message} {itemName && <span className="font-semibold text-gray-800">"{itemName}"</span>}?
+          </p>
+          
+          <div className="bg-red-50 border border-red-100 rounded-lg p-3 mt-4 text-left flex gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700">
+              This action is permanent and cannot be undone. The user's data will be removed.
+            </p>
+          </div>
+        </div>
+
+        {/* Footer Buttons */}
+        <div className="bg-gray-50 px-6 py-4 flex gap-3 justify-center">
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {isDeleting ? (
+               <>Deleting...</>
+            ) : (
+               <><Trash2 className="w-4 h-4" /> Delete Permanently</>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
 
 interface AdminUserManagementProps {
   user: any;
@@ -41,7 +117,6 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  //const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [addUserForm, setAddUserForm] = useState<AddUserForm>({
@@ -51,6 +126,9 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
     role: 'student'
   });
   const [addUserError, setAddUserError] = useState('');
+  
+  // 2. NEW STATE FOR DELETE MODAL
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // 🔄 Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,11 +140,9 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
 
   useEffect(() => {
     filterUsers();
-    // whenever filters/search change → go back to first page
     setCurrentPage(1);
   }, [users, searchQuery, roleFilter, statusFilter]);
 
-  // ensure currentPage is valid when filteredUsers length changes
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
     if (currentPage > totalPages) {
@@ -74,13 +150,9 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
     }
   }, [filteredUsers, pageSize, currentPage]);
 
-  // ============================================
-  // Fetch users from users table
-  // ============================================
   const fetchUsers = async () => {
     try {
       console.log('👥 Fetching all users...');
-
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -90,8 +162,6 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
         console.error('❌ Error fetching users:', error);
         return;
       }
-
-      console.log('✓ Fetched users:', data);
       setUsers(data || []);
     } catch (error) {
       console.error('❌ Error:', error);
@@ -124,15 +194,11 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = () => {
     setFilteredUsers(filtered);
   };
 
-  // ============================================
-  // Add user to BOTH tables (OPTIMIZED with Admin)
-  // ============================================
-const addNewUser = async () => {
+  const addNewUser = async () => {
     try {
       setAddUserError('');
       setActionLoading(true);
 
-      // Call your new Edge Function to create the user safely
       const { data, error } = await supabase.functions.invoke('admin-user-manager', {
         body: { 
           action: 'create_user', 
@@ -149,10 +215,13 @@ const addNewUser = async () => {
       if (data?.error) throw new Error(data.error);
 
       setSuccessMessage('User created successfully!');
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+      
+
       setAddUserForm({ email: '', password: '', full_name: '', role: 'student' });
       setShowAddUserModal(false);
-      
-      // Refresh the list to show the new user
       fetchUsers();
 
     } catch (error: any) {
@@ -162,12 +231,11 @@ const addNewUser = async () => {
       setActionLoading(false);
     }
   };
+
   const toggleBlockUser = async (userId: string, currentStatus: boolean) => {
     try {
       setActionLoading(true);
       const newStatus = !currentStatus;
-
-      console.log(`🔄 Toggling block status for ${userId}:`, currentStatus, '→', newStatus);
 
       const { error: profileErr } = await supabase
         .from('user_profiles')
@@ -180,12 +248,10 @@ const addNewUser = async () => {
         .eq('id', userId);
 
       if (profileErr || usersErr) {
-        console.error('❌ Error updating block status:', profileErr || usersErr);
         alert(`Failed to update: ${(profileErr || usersErr)?.message}`);
         return;
       }
 
-      console.log('✓ Updated successfully in both tables');
       setSuccessMessage(`User ${newStatus ? 'blocked' : 'unblocked'} successfully!`);
       setTimeout(() => setSuccessMessage(''), 3000);
 
@@ -206,8 +272,6 @@ const addNewUser = async () => {
     try {
       setActionLoading(true);
 
-      console.log(`🔄 Changing role for ${userId} to:`, newRole);
-
       const { error: profileErr } = await supabase
         .from('user_profiles')
         .update({ role: newRole })
@@ -219,12 +283,10 @@ const addNewUser = async () => {
         .eq('id', userId);
 
       if (profileErr || usersErr) {
-        console.error('❌ Error changing role:', profileErr || usersErr);
         alert(`Failed to change role: ${(profileErr || usersErr)?.message}`);
         return;
       }
 
-      console.log('✓ Role changed successfully in both tables');
       setSuccessMessage(`User role changed to ${newRole}!`);
       setTimeout(() => setSuccessMessage(''), 3000);
 
@@ -246,8 +308,6 @@ const addNewUser = async () => {
       setActionLoading(true);
       const newStatus = !currentStatus;
 
-      console.log(`🔄 Toggling active status for ${userId}:`, currentStatus, '→', newStatus);
-
       const { error: profileErr } = await supabase
         .from('user_profiles')
         .update({ is_active: newStatus })
@@ -259,12 +319,10 @@ const addNewUser = async () => {
         .eq('id', userId);
 
       if (profileErr || usersErr) {
-        console.error('❌ Error updating active status:', profileErr || usersErr);
         alert(`Failed to update: ${(profileErr || usersErr)?.message}`);
         return;
       }
 
-      console.log('✓ Active status updated in both tables');
       setSuccessMessage(`User ${newStatus ? 'activated' : 'deactivated'} successfully!`);
       setTimeout(() => setSuccessMessage(''), 3000);
 
@@ -281,13 +339,14 @@ const addNewUser = async () => {
     }
   };
 
- const deleteUser = async (userId: string) => {
-    if (!window.confirm('⚠️ Are you sure? This action is permanent.')) return;
+  // 3. UPDATED: EXECUTE DELETE FUNCTION (Called by Modal)
+  const executeDeleteUser = async () => {
+    if (!selectedUser) return;
+    const userId = selectedUser.id;
 
     try {
       setActionLoading(true);
 
-      // Call your new Edge Function to delete everything safely
       const { data, error } = await supabase.functions.invoke('admin-user-manager', {
         body: { 
           action: 'delete_user', 
@@ -299,15 +358,13 @@ const addNewUser = async () => {
       if (data?.error) throw new Error(data.error);
 
       setSuccessMessage('User deleted successfully!');
-      // ✅ Auto-hide after 5 seconds
-setTimeout(() => {
-  setSuccessMessage(null);
-}, 5000);
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
       
-      
-      // Update the list immediately
       setUsers(users.filter(u => u.id !== userId));
-      setSelectedUser(null);
+      setSelectedUser(null); // Close management modal
+      setShowDeleteConfirm(false); // Close delete modal
 
     } catch (error: any) {
       console.error('❌ Error:', error);
@@ -320,7 +377,6 @@ setTimeout(() => {
   if (loading) {
     return (
       <div className="flex">
-        {/* <NavigationSidebar user={user} /> */}
         <div className="flex-1 flex items-center justify-center">
           <PremiumLoader message="Loading..." fullHeight={false} />
         </div>
@@ -328,7 +384,6 @@ setTimeout(() => {
     );
   }
 
-  // 📄 Pagination calculations
   const totalItems = filteredUsers.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const indexOfLast = currentPage * pageSize;
@@ -344,7 +399,19 @@ setTimeout(() => {
   const endDisplay = totalItems === 0 ? 0 : Math.min(indexOfLast, totalItems);
 
   return (
-    <div className="flex bg-gray-100 min-h-screen">
+    <div className="flex bg-gray-50 min-h-screen">
+      
+      {/* 4. RENDER CUSTOM MODAL */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={executeDeleteUser}
+        title="Delete User"
+        message="Are you sure you want to delete"
+        itemName={selectedUser?.full_name}
+        isDeleting={actionLoading}
+      />
+
       <div className="hidden md:block">
         {/* <NavigationSidebar user={user} /> */}
       </div>
@@ -352,7 +419,6 @@ setTimeout(() => {
       <div className="flex-1 p-4 md:p-8">
 
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
-
           <div>
             <h2 className="text-3xl font-bold text-gray-800 mb-2">User Management</h2>
             <p className="text-gray-600">View and manage all users in the system</p>
@@ -376,7 +442,6 @@ setTimeout(() => {
         {/* Filters */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-
             {/* Search */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
@@ -458,25 +523,19 @@ setTimeout(() => {
             </div>
           ) : (
             <>
-
-            {/* ===== Mobile Card View ===== */}
+            {/* Mobile View */}
               <div className="md:hidden divide-y divide-gray-200">
                 {currentUsers.map((u) => (
                   <div key={u.id} className="p-4 flex gap-4">
-                    
-                    {/* Avatar */}
                     <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
                       {u.full_name.charAt(0).toUpperCase()}
                     </div>
-                
-                    {/* Content */}
                     <div className="flex-1">
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-semibold text-gray-900">{u.full_name}</p>
                           <p className="text-sm text-gray-600 break-all">{u.email}</p>
                         </div>
-                
                         <button
                           onClick={() => setSelectedUser(u)}
                           className="text-sm text-blue-600 font-medium"
@@ -484,41 +543,23 @@ setTimeout(() => {
                           Manage
                         </button>
                       </div>
-                
                       <div className="mt-3 flex flex-wrap gap-2 text-xs">
                         <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 capitalize">
                           {u.role}
                         </span>
-                
-                        <span
-                          className={`px-2 py-1 rounded-full ${
-                            u.is_active
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                          }`}
-                        >
+                        <span className={`px-2 py-1 rounded-full ${u.is_active ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                           {u.is_active ? 'Active' : 'Inactive'}
                         </span>
-                        
-                        <span
-                          className={`px-2 py-1 rounded-full ${
-                            u.is_blocked
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-green-100 text-green-700'
-                          }`}
-                        >
+                        <span className={`px-2 py-1 rounded-full ${u.is_blocked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                           {u.is_blocked ? 'Blocked' : 'Allowed'}
                         </span>
                       </div>
-                        
-                      <p className="mt-2 text-xs text-gray-400">
-                        Joined: {new Date(u.created_at).toLocaleDateString()}
-                      </p>
                     </div>
                   </div>
                 ))}
               </div>
               
+              {/* Desktop View */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
@@ -544,24 +585,16 @@ setTimeout(() => {
                         </td>
                         <td className="px-6 py-4 text-sm">
                           {u.is_active ? (
-                            <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                              Active
-                            </span>
+                            <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Active</span>
                           ) : (
-                            <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
-                              Inactive
-                            </span>
+                            <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Inactive</span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-sm">
                           {u.is_blocked ? (
-                            <span className="inline-block px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
-                              Blocked
-                            </span>
+                            <span className="inline-block px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">Blocked</span>
                           ) : (
-                            <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                              Allowed
-                            </span>
+                            <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Allowed</span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
@@ -581,7 +614,7 @@ setTimeout(() => {
                 </table>
               </div>
 
-              {/* Pagination Controls */}
+              {/* Pagination */}
               <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
@@ -590,7 +623,6 @@ setTimeout(() => {
                 >
                   Previous
                 </button>
-
                 <div className="flex items-center gap-1">
                   {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((page) => (
                     <button
@@ -606,7 +638,6 @@ setTimeout(() => {
                     </button>
                   ))}
                 </div>
-
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages || totalItems === 0}
@@ -624,7 +655,6 @@ setTimeout(() => {
       {showAddUserModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            {/* Header */}
             <div className="px-8 py-6 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-2xl font-bold text-gray-800">Add New User</h3>
               <button
@@ -638,16 +668,13 @@ setTimeout(() => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-
-            {/* Body */}
             <div className="px-8 py-6 space-y-4">
               {addUserError && (
                 <div className="p-3 bg-red-100 border border-red-200 rounded-lg text-red-700 text-sm">
                   {addUserError}
                 </div>
               )}
-
-              {/* Email */}
+              {/* Form fields same as provided */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                 <input
@@ -658,8 +685,6 @@ setTimeout(() => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-
-              {/* Full Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                 <input
@@ -670,8 +695,6 @@ setTimeout(() => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-
-              {/* Password */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
                 <input
@@ -682,8 +705,6 @@ setTimeout(() => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-
-              {/* Role */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
                 <select
@@ -696,15 +717,9 @@ setTimeout(() => {
                 </select>
               </div>
             </div>
-
-            {/* Footer */}
             <div className="px-8 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl flex gap-2">
               <button
-                onClick={() => {
-                  setShowAddUserModal(false);
-                  setAddUserError('');
-                  setAddUserForm({ email: '', password: '', full_name: '', role: 'student' });
-                }}
+                onClick={() => setShowAddUserModal(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors font-medium"
               >
                 Cancel
@@ -712,7 +727,7 @@ setTimeout(() => {
               <button
                 onClick={addNewUser}
                 disabled={actionLoading}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
               >
                 {actionLoading ? 'Creating...' : 'Create User'}
               </button>
@@ -725,13 +740,11 @@ setTimeout(() => {
       {selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            {/* Header */}
             <div className="px-8 py-6 border-b border-gray-200">
               <h3 className="text-2xl font-bold text-gray-800">{selectedUser.full_name}</h3>
               <p className="text-sm text-gray-500 mt-1">{selectedUser.email}</p>
             </div>
 
-            {/* Body */}
             <div className="px-8 py-6 space-y-4">
               <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
                 <p><strong>Role:</strong> <span className="capitalize text-gray-700">{selectedUser.role}</span></p>
@@ -746,7 +759,7 @@ setTimeout(() => {
                   defaultValue={selectedUser.role}
                   onChange={(e) => changeUserRole(selectedUser.id, e.target.value as any)}
                   disabled={actionLoading}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-50"
                 >
                   <option value="student">Student</option>
                   <option value="faculty">Faculty</option>
@@ -758,22 +771,16 @@ setTimeout(() => {
               <button
                 onClick={() => toggleActiveStatus(selectedUser.id, selectedUser.is_active)}
                 disabled={actionLoading}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-white transition-colors disabled:opacity-50 ${
                   selectedUser.is_active
                     ? 'bg-yellow-500 hover:bg-yellow-600'
                     : 'bg-green-500 hover:bg-green-600'
                 }`}
               >
                 {selectedUser.is_active ? (
-                  <>
-                    <Unlock className="w-4 h-4" />
-                    Deactivate User
-                  </>
+                  <><Unlock className="w-4 h-4" /> Deactivate User</>
                 ) : (
-                  <>
-                    <Lock className="w-4 h-4" />
-                    Activate User
-                  </>
+                  <><Lock className="w-4 h-4" /> Activate User</>
                 )}
               </button>
 
@@ -781,37 +788,30 @@ setTimeout(() => {
               <button
                 onClick={() => toggleBlockUser(selectedUser.id, selectedUser.is_blocked)}
                 disabled={actionLoading}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-white transition-colors disabled:opacity-50 ${
                   selectedUser.is_blocked
                     ? 'bg-green-600 hover:bg-green-700'
                     : 'bg-red-600 hover:bg-red-700'
                 }`}
               >
                 {selectedUser.is_blocked ? (
-                  <>
-                    <Unlock className="w-4 h-4" />
-                    Unblock User
-                  </>
+                  <><Unlock className="w-4 h-4" /> Unblock User</>
                 ) : (
-                  <>
-                    <Lock className="w-4 h-4" />
-                    Block User
-                  </>
+                  <><Lock className="w-4 h-4" /> Block User</>
                 )}
               </button>
 
-              {/* Delete */}
+              {/* Delete - 5. UPDATED BUTTON ACTION */}
               <button
-                onClick={() => deleteUser(selectedUser.id)}
+                onClick={() => setShowDeleteConfirm(true)}
                 disabled={actionLoading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-600 rounded-lg font-medium hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-600 rounded-lg font-medium hover:bg-red-200 transition-colors disabled:opacity-50"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete User Permanently
               </button>
             </div>
 
-            {/* Footer */}
             <div className="px-8 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
               <button
                 onClick={() => setSelectedUser(null)}
